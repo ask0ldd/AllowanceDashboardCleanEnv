@@ -1,4 +1,4 @@
-import AllowanceService from "@/services/allowanceService";
+import AllowanceService from "@/services/AllowanceService";
 import trashIcon from '@/assets/icons/trashicon.svg'
 import editIcon from '@/assets/icons/editicon.svg'
 
@@ -7,11 +7,15 @@ export default function Table(){
     const allowancesMockArray = Array(10).fill(0)
     const allowanceService = new AllowanceService()
 
+    function handleRevokeButtonClick(e : React.MouseEvent<HTMLButtonElement>){
+
+    }
+
     return(
         <table className="text-left text-[14px] mt-[15px]">
             <thead>
                 <tr>
-                    <th className="pl-[10px]">ERC20 address</th><th className="w-[150px]">Token</th><th>Owner address</th><th>Spender address</th><th className="w-[150px]">Amount</th><th className="w-[180px]">Date</th><th className="w-[250px] text-center">Actions</th>
+                    <th className="pl-[10px]">ERC20 token address</th><th className="w-[150px]">Token</th><th>Owner address</th><th>Spender address</th><th className="w-[150px]">Amount</th><th className="w-[180px]">Update</th><th className="w-[250px] text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,7 +32,7 @@ export default function Table(){
                             {/*<img src={editIcon}/>*/}
                             Update
                         </button>
-                        <button onClick={() => allowanceService.revokeAllowance()} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[6px] font-semibold rounded-full bg-gradient-to-r from-[#6a6e73] to-[#8f969f] border-2 border-[#43484c] text-offwhite shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] textShadow hover:shadow-[0_1px_0_#FFFFFF]">
+                        <button onClick={handleRevokeButtonClick} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[6px] font-semibold rounded-full bg-gradient-to-r from-[#6a6e73] to-[#8f969f] border-2 border-[#43484c] text-offwhite shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] textShadow hover:shadow-[0_1px_0_#FFFFFF]">
                             {/*<img src={trashIcon}/>*/}
                             Revoke
                         </button>

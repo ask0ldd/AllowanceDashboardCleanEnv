@@ -1,7 +1,46 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { FormEvent, useState } from "react";
+import AllowanceService from "@/services/AllowanceService";
+import ERC20TokenService from "@/services/ERC20TokenService";
+import HardhatService from "@/services/HardhatService";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function AddAllowance() {
+
+    const [supply, setSupply] = useState<string>()
+
+    async function read(){
+        try{
+            const hhs = new HardhatService()
+            const readSupply = await hhs.readERC20Supply("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+            setSupply(readSupply)
+            const as = new AllowanceService()
+            
+            const receipt = await as.setAllowance({
+                contractAddress : "0x5FbDB2315678afecb367f032d93F642f64180aa3", 
+                spenderAddress : "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199", 
+                amount: BigInt(20000)
+            })
+            console.log("Receipt : ", receipt)
+            
+            const allowance = await as.readAllowance({
+                contractAddress : "0x5FbDB2315678afecb367f032d93F642f64180aa3", 
+                ownerAddress : "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097", 
+                spenderAddress : "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+            })
+            console.log("Allowance : ", allowance)
+
+            const erc20ts = new ERC20TokenService()
+            const tokenInfos = await erc20ts.getTokenNSymbol("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+            if(tokenInfos != undefined) console.log(JSON.stringify(tokenInfos))
+        }
+        catch(error){
+            setSupply("error")
+        }
+    }
+
+    useEffect(() => {
+        read()
+    }, [])
 
     const defaultWalletAddress = "0x58730ae0faa10d73b0cddb5e7b87c3594f7a20cb"
 
@@ -49,10 +88,17 @@ export default function AddAllowance() {
 
     const textinputClasses = "px-[10px] mt-[6px] fill-w h-[44px] rounded-[4px] outline-1 outline outline-dashcomponent-border focus:outline-2"
 
+    const inputsPropsMap : Record<string, string> = {
+        'amountInput' : 'allowedAmount',
+        'contractInput' : 'erc20Addr',
+        'ownerInput' : 'ownerAddr',
+        'spenderInput' : 'allowedAmount',
+    }
+
     function handleSetInput(e: FormEvent<HTMLInputElement>): void {
         e.preventDefault()
         const input = (e.target as HTMLInputElement)
-        switch(input.id){
+        /*switch(input.id){
             case 'amountInput' :
                 setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : parseFloat(input.value), touched : true}})) // float?
             break;
@@ -65,8 +111,12 @@ export default function AddAllowance() {
             case 'spenderInput' :
                 setAllowanceForm(form => ({...form, spenderAddr : {...form.spenderAddr, value : input.value, touched : true}}))
             break;
-        }
+        }*/
+        setAllowanceForm(form => ({...form, [inputsPropsMap[input.id]] : {...[inputsPropsMap[input.id]], value : input.id == "amountInput" ? parseFloat(input.value) : input.value, touched : true}}))
     }
+
+    // modal with token name, symbol
+    // modal contract doesn't not exist
 
     return(
         <DashboardLayout>
@@ -84,6 +134,7 @@ export default function AddAllowance() {
                     <input id="amountInput" type="number" min={0} className={textinputClasses} value={allowanceForm.allowedAmount.value} onInput={(e) => handleSetInput(e)}/>
                     <button onClick={handleSendAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-active-black rounded-[4px] text-offwhite shadow-[0_4px_8px_#5b93ec40,0_8px_16px_#5b93ec40]">Send Allowance</button>
                 </form>
+                {supply}
             </div>
         </DashboardLayout>
     )
