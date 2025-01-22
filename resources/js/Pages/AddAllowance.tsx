@@ -1,3 +1,4 @@
+import TokenPanel from "@/Components/TokenPanel/TokenPanel";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import AllowanceService from "@/services/AllowanceService";
 import ERC20TokenService from "@/services/ERC20TokenService";
@@ -120,7 +121,8 @@ export default function AddAllowance() {
 
     return(
         <DashboardLayout>
-            <div id="allowanceFormContainer" className='flex flex-col max-w-[800px] mx-auto bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
+            <TokenPanel/>
+            <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[550px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>SET A NEW ALLOWANCE</h1>
                 <p className="italic mx-auto max-w-[550px] w-full mt-6 leading-snug text-[14px]">By setting this allowance, you will authorize a specific address (spender) to withdraw a fixed number of tokens from the selected ERC20 token contract. Exercise extreme caution and only grant allowances to entities you fully trust. Unlimited allowances should be avoided.</p>
                 <form className="mx-auto flex flex-col max-w-[550px] w-full">
@@ -134,8 +136,9 @@ export default function AddAllowance() {
                     <input id="amountInput" type="number" min={0} className={textinputClasses} value={allowanceForm.allowedAmount.value} onInput={(e) => handleSetInput(e)}/>
                     <button onClick={handleSendAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-active-black rounded-[4px] text-offwhite shadow-[0_4px_8px_#5b93ec40,0_8px_16px_#5b93ec40]">Send Allowance</button>
                 </form>
-                {supply}
+                <p className="mx-auto my-[20px]">{supply}</p>
             </div>
+            <TokenPanel/>
         </DashboardLayout>
     )
 }
