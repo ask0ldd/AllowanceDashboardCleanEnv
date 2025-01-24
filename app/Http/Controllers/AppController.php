@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class AppController extends Controller
 {
-    public function dashboard()
+    public function dashboard(): \Inertia\Response
     {
         return Inertia::render('Dashboard');
     }
