@@ -1,10 +1,10 @@
 import { THexAddress } from "@/types/THexAddress"
+import NumberUtils from "@/utils/NumberUtils"
 
 export default function TokenRow({tokenName, tokenSymbol, amount, contractAddress, imgUrl, showSeparator = true} : IProps){
 
     function handleAddressClick(e : React.MouseEvent<HTMLSpanElement>){
         e.preventDefault()
-
     }
 
     return(
@@ -17,7 +17,7 @@ export default function TokenRow({tokenName, tokenSymbol, amount, contractAddres
                 </div>
                 <div className="flex flex-col text-right ml-auto justify-center">
                     <span className="font-semibold text-[16px] leading-[22px] font-oswald translate-y-[-2px] text-[#ADB5CEdd]">{tokenSymbol}</span>
-                    <span className="translate-y-[2px] text-[#474b55] font-medium">{amount}</span>
+                    <span className="translate-y-[2px] text-[#474b55] font-medium">{NumberUtils.addDecimals(amount)}</span>
                 </div>
             </div>
             {showSeparator && <div className="h-[1px] w-full border-b-[1px] border-dashed border-[#93A9DF99]"></div>}

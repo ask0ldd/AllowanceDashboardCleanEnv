@@ -2,17 +2,18 @@ import ERC20TokenService from "@/services/ERC20TokenService"
 import TokenRow from "./TokenRow"
 import AddressUtils from "@/utils/AddressUtils"
 import { THexAddress } from "@/types/THexAddress"
+import { useServices } from "@/hooks/useServices"
+import { ITokenContract } from "@/types/ITokenContract"
 
-function TokenPanel(){
+function TokenPanel({tokenList} : {tokenList : ITokenContract}){
 
-    const erc20Service = new ERC20TokenService()
-    
+    const { erc20TokenService } = useServices()
 
     return( // gap-y-[10px] 
         <aside className="w-full max-w-[320px] flex flex-col bg-component-white rounded-3xl overflow-hidden p-[30px] pt-[35px] border border-solid border-dashcomponent-border shadow-component-grey">
             <h2 className='mx-auto mb-[15px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>OWNED</h2>
 
-            {erc20Service.getKnownDeployedTokens().slice(0, 9).map((token, id) => (
+            {erc20TokenService.getKnownDeployedTokens().slice(0, 9).map((token, id) => (
                 <TokenRow key={'tokenRow' + id} tokenName={token.name} tokenSymbol={token.symbol} amount={10000} contractAddress={AddressUtils.maskAddress(token.contractAddress as THexAddress) ?? ''} imgUrl={`/coins/coin${id}.svg`} />
             ))}
             
