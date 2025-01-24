@@ -2,6 +2,7 @@ import { createWalletClient, custom } from "viem"
 import { hardhat } from "viem/chains"
 
 export default class MetaMaskService{
+
     async getWalletAddress(){
         if (typeof window.ethereum !== 'undefined') {
             const client = createWalletClient({
@@ -10,9 +11,9 @@ export default class MetaMaskService{
             })
 
             try {
-                const [address] = await client.requestAddresses()
-                console.log('Connected address:', address)
-                return address
+                const response = await client.requestAddresses()
+                console.log('Connected address:', response[0])
+                return response[0]
             } catch (error) {
                 console.error('Failed to connect:', error)
             }
@@ -22,7 +23,7 @@ export default class MetaMaskService{
     }
     
     /*
-        Fix window.ethereum alert
+        NB : fix window.ethereum alert
 
         global.d.ts:
         import { EIP1193Provider } from 'viem'
