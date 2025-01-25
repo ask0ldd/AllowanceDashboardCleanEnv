@@ -17,15 +17,16 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
         // erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
         // router.delete(route('deleteallowance', allowanceId), { only: ['allowances'] })
         // !!! should be update to 0 instead
-        /*router.delete(`/allowance/delete/${allowanceId}`, {
+        router.put(`/allowance/revoke/${allowanceId}`, {_method: 'put',}, { // put throws this error : The PUT method is not supported for route dashboard. Supported methods: GET, HEAD.
             preserveState: true,
             preserveScroll: true,
-        })*/
-        router.put(`/allowance/revoke/${allowanceId}`, {
-            preserveState: true,
-            preserveScroll: true,
+            preserveUrl:true,
+            only: ['success', 'allowances'],
+            /*onSuccess: () => {
+                router.visit(route('dashboard'))
+            }*/
         })
-        router.visit(route('dashboard'))
+        // router.visit(route('dashboard'))
     }
 
     // get allowances from DB
@@ -87,3 +88,8 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
     const dummySpenderAddress =  '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955'
     const dummyContractOwnerAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     */
+
+            /*router.delete(`/allowance/delete/${allowanceId}`, {
+            preserveState: true,
+            preserveScroll: true,
+        })*/
