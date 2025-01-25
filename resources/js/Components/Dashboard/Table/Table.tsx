@@ -12,10 +12,20 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
 
     const { erc20TokenService } = useServices()
 
-    function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
+    async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
         // !!! show modale
-        erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
-        // !!! if succeed, get rid set allowance in db to 0
+        // erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
+        // router.delete(route('deleteallowance', allowanceId), { only: ['allowances'] })
+        // !!! should be update to 0 instead
+        /*router.delete(`/allowance/delete/${allowanceId}`, {
+            preserveState: true,
+            preserveScroll: true,
+        })*/
+        router.put(`/allowance/revoke/${allowanceId}`, {
+            preserveState: true,
+            preserveScroll: true,
+        })
+        router.visit(route('dashboard'))
     }
 
     // get allowances from DB
@@ -41,7 +51,7 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
                     <td>{allowance.amount}</td>
                     <td>12/10/2024{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
-                        <button onClick={() => router.visit('editallowance/'+allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-slate-300 hover:shadow-[0_1px_0_#FFFFFF]">
+                        <button onClick={() => router.visit('allowance/edit/'+allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-slate-300 hover:shadow-[0_1px_0_#FFFFFF]">
                             {/*<img src={editIcon}/>*/}
                             Edit
                         </button>
