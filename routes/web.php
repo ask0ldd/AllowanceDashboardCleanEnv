@@ -16,14 +16,13 @@ Route::get('/dashboard', [AllowanceController::class, 'getAll'])->name('dashboar
     $tokenList = app(TokenController::class)->getAll();
     return Inertia::render('Allowance', ['tokenList' => $tokenList]);
 })->name('newallowance');*/
-/*Route::prefix('allowance')->controller(AllowanceController::class)->group(function(){
-})*/
-Route::get('/allowance/new', [AllowanceController::class, 'new'])->name('newallowance');
-
-Route::get('/allowance/edit/{id?}', [AllowanceController::class, 'edit'])->name('editallowance')->defaults('id', 0);
-
-Route::post('/allowance', [AllowanceController::class, 'save']);
-
+Route::prefix('/allowance')->controller(AllowanceController::class)->group(function () {
+    Route::get('/new', [AllowanceController::class, 'new'])->name('newallowance');
+    Route::get('/edit/{id?}', [AllowanceController::class, 'edit'])->name('editallowance')->defaults('id', 0);
+    Route::post('/', [AllowanceController::class, 'save']);
+    Route::delete('/delete/{id?}', [AllowanceController::class, 'delete']);
+    Route::put('/revoke/{id?}', [AllowanceController::class, 'revoke']);
+});
 
 /*
 Route::get('/editallowance/{id?}', [AllowanceController::class, 'get'])
