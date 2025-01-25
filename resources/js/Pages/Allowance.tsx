@@ -4,91 +4,70 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { IAllowance } from "@/types/IAllowance";
 import { ITokenContract } from "@/types/ITokenContract";
 import { THexAddress } from "@/types/THexAddress";
-import { useForm } from "@inertiajs/react";
-import { FormEvent, useEffect, useState } from "react";
+import AddressUtils from "@/utils/AddressUtils";
+import { router, useForm } from "@inertiajs/react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
-export default function Allowance({ existingAllowance, ownedTokens } : { existingAllowance?: IAllowance/* & { mode ?: 'edit'}*/, ownedTokens : ITokenContract[]}) {
+export default function Allowance({ existingAllowance, ownedTokens } : { existingAllowance?: IAllowance, ownedTokens: ITokenContract[] }) {
 
-    const [supply, setSupply] = useState<string>()
     const [unlimitedAmount, setUnlimitedAmount] = useState<boolean>(false)
     const [walletAddress, setWalletAddress] = useState<THexAddress>()
+    const [symbol, setSymbol] = useState<string | null>(null)
 
-    const { data, setData, post, processing, errors } = useForm({
-        erc20Address: '',
-        ownerAddress: '',
-        spenderAddress: '',
-        spenderName : '',
-        allowedAmount : 0,
-    })
-
-    // cleanup 
-    useEffect(() => {
-        if(existingAllowance) console.log('existing allowance : ', JSON.stringify(existingAllowance))
-        if(ownedTokens) console.log('list : ', JSON.stringify(ownedTokens))
-    }, [])
+    const mode = useRef<string>(existingAllowance ? 'edit' : 'new')
 
     const {metamaskService, erc20TokenService} = useServices()
 
     // !!! deal with no wallet connected
-    const defaultWalletAddress = "0x58730ae0faa10d73b0cddb5e7b87c3594f7a20cb" // !!!
+    const defaultWalletAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"// "0x58730ae0faa10d73b0cddb5e7b87c3594f7a20cb" // !!!
 
-    const untouchedAllowanceForm : IFormAllowance = {
-        erc20Address : {
-            value : existingAllowance?.tokenContractAddress?.toLowerCase() ?? '',
-            touched : false,
-            error : ''
-        },
-        ownerAddress : {
-            value : existingAllowance?.ownerAddress?.toLowerCase() ?? '',
-            touched : false,
-            error : ''
-        },
-        spenderAddress : {
-            value : existingAllowance?.spenderAddress?.toLowerCase() ?? '',
-            touched : false,
-            error : ''
-        },
-        spenderName : {
-            value : existingAllowance?.spenderName ?? '',
-            touched : false,
-            error : ''
-        },
-        allowedAmount : {
-            value : Number(existingAllowance?.amount) ?? 0,
-            touched : false,
-            error : ''
-        },
-    }
-
-    const [allowanceForm, setAllowanceForm] = useState<IFormAllowance>(
-        {...untouchedAllowanceForm, 
-            ownerAddress : {
-                value : defaultWalletAddress,
-                touched : false,
-                error : ''
-            },
-        }
-    )
+    const { data, setData, post, put, get, submit, processing, errors } = useForm<IFormAllowance & {[key: string]: string}>({
+        ERC20TokenAddress: existingAllowance?.tokenContractAddress ?? '',
+        ownerAddress: existingAllowance?.ownerAddress ?? defaultWalletAddress ?? '',
+        spenderAddress: existingAllowance?.spenderAddress ?? '',
+        spenderName : existingAllowance?.spenderName ?? '',
+        amount : `${existingAllowance?.amount ?? 0}`, // !!! should i really be converting bigint to number
+    })
 
     function handleSubmitAllowanceForm(e : React.MouseEvent<HTMLButtonElement>) : void {
         e.preventDefault()
-        setData("erc20Address", allowanceForm.erc20Address.value)
-        setData("spenderAddress", allowanceForm.spenderAddress.value)
-        setData("ownerAddress", allowanceForm.ownerAddress.value)
-        setData("spenderName", allowanceForm.spenderName.value)
-        // !!! setData("allowedAmount", allowanceForm.allowedAmount.value)
-        // !!! should check if all the addresses exists
-        // !!! check if amount < balance
+        // !!! should check if all the addresses exists with viem
         // !!! check if trio not already existing
+        // !!! compare amount to balance
         if(!isAllowanceFormValid()) return
-        post('allowance', {
-            preserveScroll: true,
-            onSuccess: () => {},
-        })
+        if(!isBalanceGreaterThanAmount()) return
+        /*console.log('value', allowanceForm.erc20Address.value)
+        setData({
+            ERC20TokenAddress: allowanceForm.erc20Address.value as THexAddress, // !!! use typeguard
+            spenderAddress: allowanceForm.spenderAddress.value as THexAddress,
+            ownerAddress: allowanceForm.ownerAddress.value as THexAddress,
+            spenderName: allowanceForm.spenderName.value || "",
+            amount: allowanceForm.allowedAmount.value as number, // !!! unlimited
+        })*/
+        // submit("post", "/allowance")
+        if(mode.current == 'new'){
+            post('/allowance', {
+                preserveScroll: true,
+                onSuccess: () => {},
+            })
+        }else{
+            put('/allowance', {
+                preserveScroll: true,
+                onSuccess: () => {},
+            })
+        }
         // router.visit('/dashboard')
     }
 
     function isAllowanceFormValid(){
+        AddressUtils.isValidAddress(data.ERC20TokenAddress)
+        AddressUtils.isValidAddress(data.spenderAddress)
+        AddressUtils.isValidAddress(data.ownerAddress)
+        // !!! check if amount only string w/ numbers or unlimited
+        return true
+    }
+
+    function isBalanceGreaterThanAmount(){
         return true
     }
 
@@ -96,22 +75,43 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
     const labelClasses = "mt-[25px] font-medium text-[#474B55]"
 
     const inputsPropsMap : Record<string, string> = {
-        'amountInput' : 'allowedAmount',
-        'contractInput' : 'erc20Address',
+        // 'amountInput' : 'allowedAmount',
+        'amountInput' : 'amount', 
+        'contractInput' : 'ERC20TokenAddress', // 'erc20Address',
         'ownerInput' : 'ownerAddress',
         'spenderInput' : 'spenderAddress',
         'spenderNameInput' : 'spenderName',
     }
 
+    function isNumber(char : string) {
+        return /^\d$/.test(char);
+      }
+
     function handleSetInput(e: FormEvent<HTMLInputElement>): void {
         e.preventDefault()
         const input = (e.target as HTMLInputElement)
-        setAllowanceForm(form => ({...form, [inputsPropsMap[input.id]] : {...[inputsPropsMap[input.id]], value : input.id == "amountInput" ? parseFloat(input.value) : input.value, touched : true}}))
+        if(input.id == "amountInput" && !isNumber(input.value[input.value.length-1])) return
+        setData(form  => ({...form, [inputsPropsMap[input.id]] : input.value}))
+        // setAllowanceForm(form => ({...form, [inputsPropsMap[input.id]] : {...[inputsPropsMap[input.id]], value : input.id == "amountInput" ? parseFloat(input.value) : input.value, touched : true}}))
+    }
+
+    async function handleContractAddressBlur(e: FormEvent<HTMLInputElement>){
+        const address = (e.target as HTMLInputElement).value as string;
+        if(!AddressUtils.isValidAddress(address)) return setSymbol(null)
+        router.get('/token/symbol', { address }, {
+            preserveState: true,
+            preserveScroll: true,
+            preserveUrl: true,
+            only: ['symbol'],
+            onSuccess : (page) => {
+                setSymbol(page.props.symbol ? page.props.symbol as string : null)
+            },
+        })
     }
 
     useEffect(() => {
-        if(unlimitedAmount) return setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : "Unlimited"}}))
-        return setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : 0}}))
+        if(unlimitedAmount) return setData("amount", "Unlimited")// setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : "Unlimited"}}))
+        return  setData("amount", "0")// setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : 0}}))
     }, [unlimitedAmount])
 
     // modal with token name, symbol
@@ -127,22 +127,22 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
                     
                     <label className={labelClasses}>Token Contract Address</label>
                     <div className="w-full flex flex-row gap-x-[10px] mt-[6px]">
-                        <input style={{marginTop:0}} id="contractInput" placeholder="0x20c...a20cb" type="text" value={allowanceForm.erc20Address.value} className={textinputClasses + ' flex-grow'} onInput={(e) => handleSetInput(e)}/>
-                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-dashcomponent-border">{existingAllowance?.tokenContractSymbol && <img src={`/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
+                        <input readOnly={mode.current == "edit"} onBlur={handleContractAddressBlur} style={{marginTop:0}} id="contractInput" placeholder="0x20c...a20cb" type="text" value={data.ERC20TokenAddress/*allowanceForm.erc20Address.value*/} className={textinputClasses + ' flex-grow'} onInput={(e) => handleSetInput(e)}/>
+                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-dashcomponent-border">{(existingAllowance?.tokenContractSymbol || symbol) && <img src={symbol ? `/coins/${symbol}.svg` : `/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
                     </div>
                     
                     <label className={labelClasses}>Owner Address</label>
-                    <input id="ownerInput" placeholder="0x20c...a20cb" type="text" value={allowanceForm.ownerAddress.value} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
+                    <input id="ownerInput" placeholder="0x20c...a20cb" type="text" value={data.ownerAddress/*allowanceForm.ownerAddress.value*/} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <label className={labelClasses}>Spender Address</label>
-                    <input id="spenderInput" placeholder="0x20c...a20cb" type="text" value={allowanceForm.spenderAddress.value} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
+                    <input id="spenderInput" placeholder="0x20c...a20cb" type="text" value={data.spenderAddress/*allowanceForm.spenderAddress.value*/} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <label className={labelClasses}>Spender Name (optional)</label>
-                    <input id="spenderNameInput" placeholder="0x20c...a20cb" type="text" value={allowanceForm.spenderName.value} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
+                    <input id="spenderNameInput" placeholder="Ex : PancakeSwap, Axie Infinity, Magic Eden, ..." type="text" value={data.spenderName/*allowanceForm.spenderName.value*/} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <div className="flex flex-row justify-between"><label className={labelClasses}>Amount</label><label className={labelClasses + 'flex flex-shrink-0 w-[80px] text-center'}>Unlimited</label></div>
                     <div className="flex flex-row mt-[6px] gap-x-[15px]">
-                        <input readOnly={unlimitedAmount} id="amountInput" type={unlimitedAmount ? "text" : "number"} style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (unlimitedAmount ? ' bg-[#DCE3F2]' : '')} value={allowanceForm.allowedAmount.value} onInput={(e) => handleSetInput(e)}/>
+                        <input readOnly={unlimitedAmount} id="amountInput" inputMode={unlimitedAmount ? "text" : "numeric"} pattern={unlimitedAmount ? ".*" : "[0-9]*"} type="text" style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (unlimitedAmount ? ' bg-[#DCE3F2]' : '')} value={data.amount} onInput={(e) => handleSetInput(e)}/>
                         <div onClick={() => setUnlimitedAmount(prevState => (!prevState))} className="cursor-pointer flex flex-row flex-shrink-0 items-center bg-[#DCE3F2] p-1 w-[80px] h-[44px] rounded-full shadow-[inset_0_1px_3px_#B8C9E0,0_2px_0_#ffffff]">
                             <div className={`w-[36px] h-[36px] rounded-full transition-all ease-in duration-150 shadow-[0_2px_4px_-2px_#555566] ${unlimitedAmount ? 'ml-[36px] bg-[#474B55]' : 'ml-0 bg-[#FFFFFF] shadow-slate-400'}`}></div>
                         </div>
@@ -157,7 +157,7 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
     )
 }
 
-interface IFormAllowance {
+/*interface IFormAllowance {
     erc20Address : {
         value : string
         touched : boolean
@@ -183,6 +183,14 @@ interface IFormAllowance {
         touched : boolean
         error : string
     },
+}*/
+
+interface IFormAllowance{
+    ERC20TokenAddress: string
+    ownerAddress: string
+    spenderAddress: string
+    spenderName : string
+    amount : string // | "Unlimited" // biginit
 }
 
 /*switch(input.id){
@@ -237,3 +245,86 @@ interface IFormAllowance {
     useEffect(() => {
         read()
     }, [])*/
+
+    /*
+  import { useState } from 'react';
+import { useForm } from '@inertiajs/react';
+
+function YourComponent() {
+  const [firstFieldValue, setFirstFieldValue] = useState('');
+  const { data, setData, get } = useForm({
+    searchTerm: '',
+    relatedData: null
+  });
+
+  const handleFirstFieldChange = (e) => {
+    const value = e.target.value;
+    setFirstFieldValue(value);
+
+    // Trigger real-time search/update
+    get(route('your.search.route'), {
+      data: { searchTerm: value },
+      preserveState: true,
+      only: ['relatedData'],
+      onSuccess: (page) => {
+        setData('relatedData', page.props.relatedData);
+      }
+    });
+  };
+
+  return (
+    <div>
+      <input 
+        type="text" 
+        value={firstFieldValue}
+        onChange={handleFirstFieldChange}
+      />
+      <input 
+        type="text" 
+        value={data.relatedData || ''} 
+        readOnly 
+      />
+    </div>
+  );
+}
+
+    */
+
+
+/*const untouchedAllowanceForm : IFormAllowance = {
+        erc20Address : {
+            value : existingAllowance?.tokenContractAddress ?? '',
+            touched : false,
+            error : ''
+        },
+        ownerAddress : {
+            value : existingAllowance?.ownerAddress ?? '',
+            touched : false,
+            error : ''
+        },
+        spenderAddress : {
+            value : existingAllowance?.spenderAddress ?? '',
+            touched : false,
+            error : ''
+        },
+        spenderName : {
+            value : existingAllowance?.spenderName ?? '',
+            touched : false,
+            error : ''
+        },
+        allowedAmount : {
+            value : Number(existingAllowance?.amount ?? 0), // !!! fix error in console
+            touched : false,
+            error : ''
+        },
+    }
+
+    const [allowanceForm, setAllowanceForm] = useState<IFormAllowance>(
+        {...untouchedAllowanceForm, 
+            ownerAddress : {
+                value : defaultWalletAddress, // !!!
+                touched : false,
+                error : ''
+            },
+        }
+    )*/
