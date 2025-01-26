@@ -1,15 +1,12 @@
 import { THexAddress } from "@/types/THexAddress"
 import AddressUtils from "@/utils/AddressUtils"
+import ClipboardUtils from "@/utils/ClipboardUtils"
 import NumberUtils from "@/utils/NumberUtils"
 
 export default function TokenRow({tokenName, tokenSymbol, amount, contractAddress, imgUrl, showSeparator = true} : IProps){
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
-        try {
-          await navigator.clipboard.writeText(text)
-        } catch (err) {
-          console.error('Failed to copy text: ', err)
-        }
+        await ClipboardUtils.copy(text)
     }
 
     return(

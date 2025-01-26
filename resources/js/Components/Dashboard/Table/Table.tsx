@@ -4,6 +4,7 @@ import { useServices } from '@/hooks/useServices'
 import { IAllowance } from '@/types/IAllowance'
 import { THexAddress } from '@/types/THexAddress'
 import AddressUtils from '@/utils/AddressUtils'
+import ClipboardUtils from '@/utils/ClipboardUtils'
 import { router } from '@inertiajs/react'
 
 export default function Table({allowances} : {allowances : IAllowance[]}){
@@ -11,6 +12,11 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
     const allowancesMockArray = Array(10).fill(0)
 
     const { erc20TokenService } = useServices()
+
+    async function handleCopyToClipboard(text : string) : Promise<void> {
+        await ClipboardUtils.copy(text)
+        // !!! add snackbar : copied to clipboard
+    }
 
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
         // !!! show modale
@@ -45,10 +51,10 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
                 <tr key={"tableLine" + index}>
                     <td><img className='w-[32px] mx-auto' src={`/coins/${allowance.tokenContractSymbol}.svg`}/></td>
                     <td>{allowance.tokenContractName}</td>
-                    <td title={allowance.tokenContractAddress}>{AddressUtils.maskAddress(allowance.tokenContractAddress)}</td>
+                    <td className='cursor-pointer' onClick={() => handleCopyToClipboard(allowance.tokenContractAddress)} title={allowance.tokenContractAddress}>{AddressUtils.maskAddress(allowance.tokenContractAddress)}</td>
                     <td>{allowance.tokenContractSymbol}</td>
-                    <td title={allowance.ownerAddress}>{AddressUtils.maskAddress(allowance.ownerAddress)}</td>
-                    <td title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
+                    <td className='cursor-pointer' onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}>{AddressUtils.maskAddress(allowance.ownerAddress)}</td>
+                    <td className='cursor-pointer' onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
                     <td>{allowance.amount}</td>
                     <td>12/10/2024{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
