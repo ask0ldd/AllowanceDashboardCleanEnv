@@ -25,7 +25,7 @@ function TokenPanel({ownedTokens} : {ownedTokens : ITokenContract[]}){
     }, [])
 
     return( // gap-y-[10px] 
-        <aside className="w-full max-w-[320px] flex flex-col bg-component-white rounded-3xl overflow-hidden p-[30px] pt-[35px] border border-solid border-dashcomponent-border shadow-component-grey">
+        <aside className="w-full max-w-[320px] flex flex-col bg-component-white rounded-3xl overflow-hidden p-[30px] pt-[35px] border border-solid border-dashcomponent-border">
             <h2 className='mx-auto mb-[15px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>OWNED</h2>
 
             {ownedTokens.slice(0, 9).map((token, id) => (

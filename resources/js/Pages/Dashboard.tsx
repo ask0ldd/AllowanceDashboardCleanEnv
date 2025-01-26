@@ -16,9 +16,9 @@ export default function Dashboard({allowances} : {allowances ?: IAllowance[]}) {
 
     return(
         <DashboardLayout>
-            <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border shadow-component-grey'>
+            <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
-                {allowances ? <Table allowances={allowances}/> : <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border shadow-component-grey'>Connect your wallet to see the allowances linked to your account.</div>}
+                {allowances ? <Table allowances={allowances}/> : <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>Connect your wallet to see the allowances linked to your account.</div>}
             </div>
         </DashboardLayout>
     )

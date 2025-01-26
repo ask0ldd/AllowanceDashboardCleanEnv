@@ -64,7 +64,7 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
         return true
     }
 
-    const textinputClasses = "px-[10px] mt-[6px] fill-w h-[44px] rounded-[4px] outline-1 outline outline-dashcomponent-border focus:outline-2"
+    const textinputClasses = "px-[10px] mt-[6px] fill-w h-[44px] rounded-[4px] bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]"
     const labelClasses = "mt-[25px] font-medium text-[#474B55]"
 
     const inputsPropsMap : Record<string, string> = {
@@ -109,15 +109,15 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
     return(
         <DashboardLayout>
             <TokenPanel ownedTokens={ownedTokens}/>
-            <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[35px] border border-solid border-dashcomponent-border'>
+            <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[30px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[580px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>{!existingAllowance ? 'SET A NEW' : 'EDIT AN'} ALLOWANCE</h1>
-                <p className="border-l border-[#a2bbE0] border-solid pl-3 italic mx-auto max-w-[580px] w-full mt-6 leading-snug text-[14px]">By setting this allowance, you will authorize a specific address (spender) to withdraw a fixed number of tokens from the selected ERC20 token contract. Exercise extreme caution and only grant allowances to entities you fully trust. Unlimited allowances should be avoided.</p>
+                <p className="border-l border-[#303030] border-dashed bg-[#ECEFF1] p-3 italic mx-auto max-w-[580px] w-full mt-6 leading-snug text-[14px]">By setting this allowance, you will authorize a specific address (spender) to withdraw a fixed number of tokens from the selected ERC20 token contract. Exercise extreme caution and only grant allowances to entities you fully trust. Unlimited allowances should be avoided.</p>
                 <form className="mx-auto flex flex-col max-w-[580px] w-full">
                     
                     <label className={labelClasses}>Token Contract Address</label>
                     <div className="w-full flex flex-row gap-x-[10px] mt-[6px]">
                         <input readOnly={mode.current == "edit"} onBlur={handleContractAddressBlur} style={{marginTop:0}} id="contractInput" placeholder="0x20c...a20cb" type="text" value={data.ERC20TokenAddress/*allowanceForm.erc20Address.value*/} className={textinputClasses + ' flex-grow'} onInput={(e) => handleSetInput(e)}/>
-                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-dashcomponent-border">{(existingAllowance?.tokenContractSymbol || symbol) && <img src={symbol ? `/coins/${symbol}.svg` : `/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
+                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-[#E1E3E6]">{(existingAllowance?.tokenContractSymbol || symbol) && <img src={symbol ? `/coins/${symbol}.svg` : `/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
                     </div>
                     
                     <label className={labelClasses}>Owner Address</label>
@@ -131,13 +131,13 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
                     
                     <div className="flex flex-row justify-between"><label className={labelClasses}>Amount</label><label className={labelClasses + 'flex flex-shrink-0 w-[80px] text-center'}>Unlimited</label></div>
                     <div className="flex flex-row mt-[6px] gap-x-[15px]">
-                        <input readOnly={unlimitedAmount} id="amountInput" inputMode={unlimitedAmount ? "text" : "numeric"} pattern={unlimitedAmount ? ".*" : "[0-9]*"} type="text" style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (unlimitedAmount ? ' bg-[#DCE3F2]' : '')} value={data.amount} onInput={(e) => handleSetInput(e)}/>
-                        <div onClick={() => setUnlimitedAmount(prevState => (!prevState))} className="cursor-pointer flex flex-row flex-shrink-0 items-center bg-[#DCE3F2] p-1 w-[80px] h-[44px] rounded-full shadow-[inset_0_1px_3px_#B8C9E0,0_2px_0_#ffffff]">
-                            <div className={`w-[36px] h-[36px] rounded-full transition-all ease-in duration-150 shadow-[0_2px_4px_-2px_#555566] ${unlimitedAmount ? 'ml-[36px] bg-[#474B55]' : 'ml-0 bg-[#FFFFFF] shadow-slate-400'}`}></div>
+                        <input disabled={unlimitedAmount} readOnly={unlimitedAmount} id="amountInput" inputMode={unlimitedAmount ? "text" : "numeric"} pattern={unlimitedAmount ? ".*" : "[0-9]*"} type="text" style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (unlimitedAmount ? ' bg-[#EDEFF0] outline-[#D0D4D8] text-[#33333388]' : '')} value={data.amount} onInput={(e) => handleSetInput(e)}/>
+                        <div onClick={() => setUnlimitedAmount(prevState => (!prevState))} className="cursor-pointer flex flex-row flex-shrink-0 items-center bg-[#EDEFF0] p-1 w-[80px] h-[44px] rounded-full shadow-[inset_0_1px_3px_#BBC7D3,0_2px_0_#ffffff]">
+                            <div className={`w-[36px] h-[36px] rounded-full transition-all ease-in duration-150 shadow-[0_2px_4px_-2px_#555566] ${unlimitedAmount ? 'ml-[36px] bg-orange-gradient' : 'ml-0 bg-[#FFFFFF] shadow-slate-400'}`}></div>
                         </div>
                     </div>
 
-                    <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-active-black rounded-[4px] text-offwhite shadow-[0_4px_8px_#5b93ec40,0_8px_16px_#5b93ec40]">Send / Set Allowance</button>
+                    <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-orange-gradient rounded-[4px] text-offwhite shadow-[0_4px_8px_#F7644140]">Set Allowance</button>
                 </form>
                 { /* <p className="mx-auto my-[20px]">{supply}</p> */ }
             </div>
