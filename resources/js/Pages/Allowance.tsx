@@ -4,7 +4,9 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { IAllowance } from "@/types/IAllowance";
 import { ITokenContract } from "@/types/ITokenContract";
 import { THexAddress } from "@/types/THexAddress";
+import { isHexAddress } from "@/types/typeguards";
 import AddressUtils from "@/utils/AddressUtils";
+import NumberUtils from "@/utils/NumberUtils";
 import { router, useForm } from "@inertiajs/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
@@ -21,7 +23,7 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
     // !!! deal with no wallet connected
     const defaultWalletAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"// "0x58730ae0faa10d73b0cddb5e7b87c3594f7a20cb" // !!!
 
-    const { data, setData, post, put, get, submit, processing, errors } = useForm<IFormAllowance & {[key: string]: string}>({
+    const { data, setData, post, put, get, submit, processing, errors, setError } = useForm<IFormAllowance & {[key: string]: string}>({
         ERC20TokenAddress: existingAllowance?.tokenContractAddress ?? '',
         ownerAddress: existingAllowance?.ownerAddress ?? defaultWalletAddress ?? '',
         spenderAddress: existingAllowance?.spenderAddress ?? '',
@@ -29,45 +31,36 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
         amount : `${existingAllowance?.amount ?? 0}`, // !!! should i really be converting bigint to number
     })
 
-    function handleSubmitAllowanceForm(e : React.MouseEvent<HTMLButtonElement>) : void {
+    async function handleSubmitAllowanceForm(e : React.MouseEvent<HTMLButtonElement>) : Promise<void> {
         e.preventDefault()
-        // !!! should check if all the addresses exists with viem
-        // !!! check if trio not already existing
-        // !!! compare amount to balance
-        if(!isAllowanceFormValid()) return
-        if(!isBalanceGreaterThanAmount()) return
-        /*console.log('value', allowanceForm.erc20Address.value)
-        setData({
-            ERC20TokenAddress: allowanceForm.erc20Address.value as THexAddress, // !!! use typeguard
-            spenderAddress: allowanceForm.spenderAddress.value as THexAddress,
-            ownerAddress: allowanceForm.ownerAddress.value as THexAddress,
-            spenderName: allowanceForm.spenderName.value || "",
-            amount: allowanceForm.allowedAmount.value as number, // !!! unlimited
-        })*/
-        // submit("post", "/allowance")
+        // !!! backend side : check if trio not already existing
+        // if (!await isAllowanceFormValid()) return
         if(mode.current == 'new'){
             post('/allowance', {
                 preserveScroll: true,
                 onSuccess: () => {},
             })
         }else{
-            put('/allowance', {
+            put('/allowance/' + route().params.id, {
                 preserveScroll: true,
                 onSuccess: () => {},
             })
         }
-        // router.visit('/dashboard')
     }
 
-    function isAllowanceFormValid(){
-        AddressUtils.isValidAddress(data.ERC20TokenAddress)
-        AddressUtils.isValidAddress(data.spenderAddress)
-        AddressUtils.isValidAddress(data.ownerAddress)
-        // !!! check if amount only string w/ numbers or unlimited
+    async function isAllowanceFormValid(){
+        // can't check if address exists through viem since balances may be 0 so only check contract address supply
+        if(!isHexAddress(data.ERC20TokenAddress)) return false
+        if(!isHexAddress(data.spenderAddress)) return false
+        if(!isHexAddress(data.ownerAddress)) return false
+        if(!(NumberUtils.isNumber(data.amount) || data.amount == 'unlimited')) return false
+        if(!await isBalanceGreaterThanAmount(data.ERC20TokenAddress, data.ownerAddress)) return false
         return true
     }
 
-    function isBalanceGreaterThanAmount(){
+    async function isBalanceGreaterThanAmount(ERC20TokenAddress : THexAddress, ownerAddress : THexAddress){
+        const balance = await erc20TokenService.getBalance(ERC20TokenAddress, ownerAddress)
+        if(!balance) return false
         return true
     }
 
@@ -83,14 +76,10 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
         'spenderNameInput' : 'spenderName',
     }
 
-    function isNumber(char : string) {
-        return /^\d$/.test(char);
-      }
-
     function handleSetInput(e: FormEvent<HTMLInputElement>): void {
         e.preventDefault()
         const input = (e.target as HTMLInputElement)
-        if(input.id == "amountInput" && !isNumber(input.value[input.value.length-1])) return
+        if(input.id == "amountInput" && !NumberUtils.isNumber(input.value[input.value.length-1])) return
         setData(form  => ({...form, [inputsPropsMap[input.id]] : input.value}))
         // setAllowanceForm(form => ({...form, [inputsPropsMap[input.id]] : {...[inputsPropsMap[input.id]], value : input.id == "amountInput" ? parseFloat(input.value) : input.value, touched : true}}))
     }
@@ -110,12 +99,12 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
     }
 
     useEffect(() => {
-        if(unlimitedAmount) return setData("amount", "Unlimited")// setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : "Unlimited"}}))
-        return  setData("amount", "0")// setAllowanceForm(form => ({...form, allowedAmount : {...form.allowedAmount, value : 0}}))
+        if(unlimitedAmount) return setData("amount", "Unlimited")
+        return setData("amount", `${existingAllowance?.amount ?? 0}`)
     }, [unlimitedAmount])
 
-    // modal with token name, symbol
-    // modal contract doesn't not exist
+    // !!! modal with token name, symbol
+    // !!! modal contract doesn't not exist
 
     return(
         <DashboardLayout>
@@ -148,7 +137,7 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
                         </div>
                     </div>
 
-                    <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-active-black rounded-[4px] text-offwhite shadow-[0_4px_8px_#5b93ec40,0_8px_16px_#5b93ec40]">Send Allowance</button>
+                    <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-active-black rounded-[4px] text-offwhite shadow-[0_4px_8px_#5b93ec40,0_8px_16px_#5b93ec40]">Send / Set Allowance</button>
                 </form>
                 { /* <p className="mx-auto my-[20px]">{supply}</p> */ }
             </div>
@@ -179,7 +168,7 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
         error : string
     },
     allowedAmount : {
-        value : number | "Unlimited"
+        value : number | "unlimited"
         touched : boolean
         error : string
     },
@@ -190,7 +179,7 @@ interface IFormAllowance{
     ownerAddress: string
     spenderAddress: string
     spenderName : string
-    amount : string // | "Unlimited" // biginit
+    amount : string // | "unlimited" // biginit
 }
 
 /*switch(input.id){
