@@ -1,0 +1,1 @@
+export type THexAddress = `0x${string}`
