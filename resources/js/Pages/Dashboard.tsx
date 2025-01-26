@@ -1,11 +1,18 @@
 import Table from '@/Components/Dashboard/Table/Table';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
+import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 
 export default function Dashboard({allowances} : {allowances ?: IAllowance[]}) {
 
     // !!! deal with no wallet connected
+
+    const { props } = usePage()
+
+    useEffect(() => {
+        console.log(props.success)
+    }, [props.success])
 
     return(
         <DashboardLayout>

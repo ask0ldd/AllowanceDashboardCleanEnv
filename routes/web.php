@@ -21,7 +21,7 @@ Route::prefix('/allowance')->controller(AllowanceController::class)->group(funct
     Route::post('/', [AllowanceController::class, 'save']);
     Route::delete('/delete/{id?}', [AllowanceController::class, 'delete']);
     Route::put('/revoke/{id?}', [AllowanceController::class, 'revoke']);
-    Route::put('/', [AllowanceController::class, 'update']);
+    Route::put('/{id?}', [AllowanceController::class, 'update']);
 });
 
 Route::get('/token/symbol', [TokenController::class, 'getSymbol']);
