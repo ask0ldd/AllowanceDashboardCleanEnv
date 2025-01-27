@@ -15,7 +15,7 @@ export default function TokenRow({tokenName, tokenSymbol, amount, contractAddres
                 <img src={imgUrl}/>
                 <div className="flex flex-col ml-[14px] justify-center">
                     <span className="font-semibold translate-y-[0px] text-[#474b55]">{tokenName}</span>
-                    <span onClick={() => handleCopyToClipboard(contractAddress)} title={contractAddress} className="cursor-pointer translate-y-[1px] text-[#92949C]">{AddressUtils.maskAddress(contractAddress as THexAddress)}</span>
+                    <span onClick={() => handleCopyToClipboard(contractAddress)} title={contractAddress} className="cursor-pointer translate-y-[1px] text-[#92949Cdd]">{AddressUtils.maskAddress(contractAddress as THexAddress)}</span>
                 </div>
                 <div className="flex flex-col text-right ml-auto justify-center">
                     <span className="font-semibold text-[16px] leading-[22px] font-oswald translate-y-[-2px] text-[#BCC2C8]">{tokenSymbol}</span>
