@@ -2,7 +2,7 @@
 import { ReactNode, useEffect, useRef } from 'react'
 import './Modal.css'
 
-function Modal({children, modalVisibility, memoizedSetModalStatus, /*modalContent,*/ containerCSSClass, width} : IProps){
+function Modal({children, modalVisibility, setModalStatus, /*modalContent,*/ containerCSSClass, width} : IProps){
 
     const dialogRef = useRef<HTMLDialogElement>(null)
     const modalVisibilityRef = useRef<boolean>(modalVisibility)
@@ -16,6 +16,14 @@ function Modal({children, modalVisibility, memoizedSetModalStatus, /*modalConten
 
     // the following events handler prevent the modal from being closed by releasing the mouse button outside of it
     // useful when the user makes big gestures when selecting modal text elements
+    /**
+     * Handles click events on the modal.
+     * Prevents closing the modal when releasing the mouse button outside after a drag action started inside.
+     * 
+     * @function handleOnClick
+     * @param {React.MouseEvent} e - The mouse event object.
+     * @returns {void}
+     */
     function handleOnClick(e : React.MouseEvent) : void{
         if (isMouseDownInsideModal.current && (e.target as HTMLDialogElement).nodeName === 'DIALOG') {
             e.preventDefault()
@@ -24,6 +32,14 @@ function Modal({children, modalVisibility, memoizedSetModalStatus, /*modalConten
         }
     }
 
+    /**
+     * Handles mouse down events on the modal.
+     * Determines if the mouse down event occurred inside or outside the modal.
+     * 
+     * @function handleMouseDown
+     * @param {React.MouseEvent} e - The mouse event object.
+     * @returns {void}
+     */
     function handleMouseDown(e: React.MouseEvent) : void {
         const dialogElement = e.target as HTMLDialogElement
 
@@ -47,12 +63,20 @@ function Modal({children, modalVisibility, memoizedSetModalStatus, /*modalConten
         }
     }
 
+    /**
+     * Handles mouse up events on the modal.
+     * Closes the modal if the mouse up event occurred outside the modal content.
+     * 
+     * @function handleMouseUp
+     * @param {React.MouseEvent} e - The mouse event object.
+     * @returns {void}
+     */
     function handleMouseUp(e : React.MouseEvent){
         if (isMouseDownInsideModal.current) return
         e.preventDefault()
         e.stopPropagation()
         isMouseDownInsideModal.current = false
-        if ((e.target as HTMLDialogElement).nodeName === 'DIALOG') memoizedSetModalStatus({visibility : false})
+        if ((e.target as HTMLDialogElement).nodeName === 'DIALOG') setModalStatus({visibility : false})
     }
     
     return (
@@ -75,8 +99,7 @@ export default Modal
 interface IProps{
     children: ReactNode
     modalVisibility : boolean
-    // modalContent : JSX.Element
     containerCSSClass? : string
-    memoizedSetModalStatus : ({visibility, contentId} : {visibility : boolean, contentId? : string}) => void
+    setModalStatus : ({visibility, contentId} : {visibility : boolean, contentId? : string}) => void
     width ?: string
 }
