@@ -1,27 +1,34 @@
 import Table from '@/Components/Dashboard/Table/Table';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
+import type { PageProps, Errors, ErrorBag } from "@inertiajs/core";
 import { useEffect } from 'react';
 
 export default function Dashboard({allowances} : {allowances ?: IAllowance[]}) {
 
     // !!! deal with no wallet connected
 
-    const { props } = usePage()
-
-    useEffect(() => {
-        console.log(props.success)
-    }, [props.success])
+    // const {props} = usePage<IPageProps>()
+    const { flash, success, ced } = usePage<IPageProps>().props;
 
     return(
-        <DashboardLayout>
+        <DashboardLayout success={flash.success}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 {allowances ? <Table allowances={allowances}/> : <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>Connect your wallet to see the allowances linked to your account.</div>}
             </div>
         </DashboardLayout>
     )
+}
+
+interface IPageProps extends PageProps {
+    flash: {
+      success?: string;
+      message? : string
+    };
+
+    success?: string
 }
 
 /*

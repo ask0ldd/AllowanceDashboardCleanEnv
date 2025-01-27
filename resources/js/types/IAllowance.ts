@@ -25,4 +25,5 @@ export interface IAllowance {
     spenderAddress: THexAddress
     createdAt: string
     updatedAt: string
+    isUnlimited : boolean
 }

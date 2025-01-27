@@ -8,6 +8,6 @@ export default class NumberUtils{
     }
 
     static isNumber(str : string) {
-        return /^\d$/.test(str)
+        return /^\d+$/.test(str)
     }
 }
