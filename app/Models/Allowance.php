@@ -12,6 +12,7 @@ class Allowance extends Model
         'spender_address_id',
         'amount',
         'transaction_hash',
+        'is_unlimited',
     ];
 
     protected $casts = [
@@ -19,6 +20,7 @@ class Allowance extends Model
         'token_contract_id' => 'integer',
         'owner_address_id' => 'integer',
         'spender_address_id' => 'integer',
+        'is_unlimited' => 'boolean'
     ];
 
     public function tokenContract()

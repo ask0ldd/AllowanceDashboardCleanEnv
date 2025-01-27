@@ -27,7 +27,7 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
             preserveState: true,
             preserveScroll: true,
             preserveUrl:true,
-            only: ['success', 'allowances'],
+            // only: ['success', 'allowances'],
             /*onSuccess: () => {
                 router.visit(route('dashboard'))
             }*/
@@ -55,15 +55,13 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
                     <td>{allowance.tokenContractSymbol}</td>
                     <td className='cursor-pointer' onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}>{AddressUtils.maskAddress(allowance.ownerAddress)}</td>
                     <td className='cursor-pointer' onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
-                    <td>{allowance.amount}</td>
+                    <td>{allowance.isUnlimited ? 'Unlimited' : allowance.amount}</td>
                     <td>12/10/2024{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
                         <button onClick={() => router.visit('allowance/edit/'+allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
-                            {/*<img src={editIcon}/>*/}
                             Edit
                         </button>
                         <button onClick={() => handleRevokeButtonClick(allowance.id, allowance.tokenContractAddress, allowance.spenderAddress)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[6px] font-semibold rounded-full bg-desat-orange-gradient border-2 border-[#43484c] text-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] textShadow hover:shadow-[0_1px_0_#FFFFFF] hover:bg-orange-gradient">
-                            {/*<img src={trashIcon}/>*/}
                             Revoke
                         </button>
                     </td>
@@ -71,7 +69,13 @@ export default function Table({allowances} : {allowances : IAllowance[]}){
             ))}
             </tbody>
         </table>
-        <div className='ml-auto mt-[15px]'><button>1</button><button>2</button>...<button>9</button><button>10</button></div>
+        <div className='ml-auto mt-[15px] flex flex-row gap-x-[8px]'>
+            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>1</button>
+            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>2</button>
+            ...
+            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>9</button>
+            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>10</button>
+        </div>
         </>
     )
 }
