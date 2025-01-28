@@ -1,4 +1,4 @@
-import TokenPanel from "@/Components/TokenPanel/TokenPanel";
+import TokenPanel from "@/Components/LateralPanels/TokenPanel";
 import { useServices } from "@/hooks/useServices";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { IAllowance } from "@/types/IAllowance";
@@ -7,31 +7,38 @@ import { THexAddress } from "@/types/THexAddress";
 import { isHexAddress } from "@/types/typeguards";
 import AddressUtils from "@/utils/AddressUtils";
 import NumberUtils from "@/utils/NumberUtils";
-import { router, useForm } from "@inertiajs/react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { router, useForm, usePage } from "@inertiajs/react";
+import { FormEvent, useRef, useState } from "react";
+import type { PageProps } from "@inertiajs/core";
+import SpenderPanel from "@/Components/LateralPanels/SpenderPanel";
+import useModalManager from "@/hooks/useModalManager";
 
-export default function Allowance({ existingAllowance, ownedTokens } : { existingAllowance?: IAllowance, ownedTokens: ITokenContract[] }) {
+export default function Allowance() {
 
-    const [unlimitedAmount, setUnlimitedAmount] = useState<boolean>(false)
-    const [walletAddress, setWalletAddress] = useState<THexAddress>()
+    const { flash, success, accountAddress, mockAccountPrivateKey, existingAllowance, ownedTokens } = usePage<IPageProps>().props
+
     const [symbol, setSymbol] = useState<string | null>(null)
+
+    const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
 
     const mode = useRef<string>(existingAllowance ? 'edit' : 'new')
 
     const { metamaskService, erc20TokenService } = useServices()
 
-    // !!! deal with no wallet connected
-    const defaultWalletAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"// "0x58730ae0faa10d73b0cddb5e7b87c3594f7a20cb" // !!!
-
-    const { data, setData, post, put, get, submit, processing, errors, setError } = useForm<IFormAllowance & {[key: string]: string | boolean}>({
+    const { data, setData, post, put, processing, errors, setError } = useForm<IFormAllowance & {[key: string]: string | boolean}>({
         ERC20TokenAddress: existingAllowance?.tokenContractAddress ?? '',
-        ownerAddress: existingAllowance?.ownerAddress ?? defaultWalletAddress ?? '',
+        ownerAddress: existingAllowance?.ownerAddress ?? accountAddress ?? '', // !!! mock account
         spenderAddress: existingAllowance?.spenderAddress ?? '',
         spenderName : existingAllowance?.spenderName ?? '',
         amount : `${existingAllowance?.amount ?? 0}`, // !!! should i really be converting bigint to number
         isUnlimited : existingAllowance?.isUnlimited ?? false,
     })
 
+    // !!! should check if account address = metamask account address
+    // if not, send new address
+    // if disconnected flush session address
+
+    // !!! should not be able to send an allowance if not connected
     async function handleSubmitAllowanceForm(e : React.MouseEvent<HTMLButtonElement>) : Promise<void> {
         e.preventDefault()
         // !!! backend side : check if trio not already existing
@@ -123,12 +130,14 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
         })
     }
 
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
+
     // !!! modal with token name, symbol
     // !!! modal contract doesn't not exist
 
     return(
-        <DashboardLayout>
-            <TokenPanel ownedTokens={ownedTokens}/>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setModalStatus={setModalStatus} modalVisibility={modalVisibility} errorMessageRef={errorMessageRef} modalContentId={modalContentId}>
+            <TokenPanel ownedTokens={ownedTokens} setSnackbarMessage={setSnackbarMessage}/>
             <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[30px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[580px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>{!existingAllowance ? 'SET A NEW' : 'EDIT AN'} ALLOWANCE</h1>
                 <p className="border-l border-[#303030] border-dashed bg-[#ECEFF1] p-3 italic mx-auto max-w-[580px] w-full mt-8 leading-snug text-[14px]">By setting this allowance, you will authorize a specific address (spender) to withdraw a fixed number of tokens from the selected ERC20 token contract. Exercise extreme caution and only grant allowances to entities you fully trust. Unlimited allowances should be avoided.</p>
@@ -161,38 +170,23 @@ export default function Allowance({ existingAllowance, ownedTokens } : { existin
                 </form>
                 { /* <p className="mx-auto my-[20px]">{supply}</p> */ }
             </div>
-            <TokenPanel ownedTokens={ownedTokens}/>
+            <SpenderPanel setSnackbarMessage={setSnackbarMessage}/>
         </DashboardLayout>
     )
 }
 
-/*interface IFormAllowance {
-    erc20Address : {
-        value : string
-        touched : boolean
-        error : string
-    },
-    ownerAddress : {
-        value : string
-        touched : boolean
-        error : string
-    },
-    spenderAddress : {
-        value : string
-        touched : boolean
-        error : string
-    },
-    spenderName : {
-        value : string
-        touched : boolean
-        error : string
-    },
-    allowedAmount : {
-        value : number | "unlimited"
-        touched : boolean
-        error : string
-    },
-}*/
+interface IPageProps extends PageProps {
+    flash: {
+      success?: string;
+      message? : string
+    };
+
+    success?: string
+    accountAddress?: string
+    mockAccountPrivateKey?: string
+    existingAllowance?: IAllowance,
+    ownedTokens: ITokenContract[]
+}
 
 interface IFormAllowance{
     ERC20TokenAddress : string
