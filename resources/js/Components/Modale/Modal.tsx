@@ -71,7 +71,7 @@ function Modal({children, modalVisibility, setModalStatus, /*modalContent,*/ con
      * @param {React.MouseEvent} e - The mouse event object.
      * @returns {void}
      */
-    function handleMouseUp(e : React.MouseEvent){
+    function handleMouseUp(e : React.MouseEvent): void{
         if (isMouseDownInsideModal.current) return
         e.preventDefault()
         e.stopPropagation()
