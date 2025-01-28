@@ -1,22 +1,34 @@
 import Table from '@/Components/Dashboard/Table/Table';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
-import { usePage, router } from '@inertiajs/react';
-import type { PageProps, Errors, ErrorBag } from "@inertiajs/core";
-import { useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
+import type { PageProps } from "@inertiajs/core";
+import { useEffect, useState } from 'react';
+import { THexAddress } from '@/types/THexAddress';
+import useModalManager from '@/hooks/useModalManager';
+import BlankTable from '@/Components/Dashboard/Table/BlankTable';
 
-export default function Dashboard({allowances} : {allowances ?: IAllowance[]}) {
+export default function Dashboard() {
 
+    const { flash, success, accountAddress, mockAccountPrivateKey, allowances } = usePage<IPageProps>().props
+
+    const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
+
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
+
+    useEffect(() => {
+        if(flash?.success) setSnackbarMessage(flash.success)
+    }, [flash.success])
+
+
+    // !!! if accountAddress && mockAccountAddress null then BlankTable
     // !!! deal with no wallet connected
 
-    // const {props} = usePage<IPageProps>()
-    const { flash, success, ced } = usePage<IPageProps>().props;
-
     return(
-        <DashboardLayout success={flash.success}>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setModalStatus={setModalStatus} modalVisibility={modalVisibility} errorMessageRef={errorMessageRef} modalContentId={modalContentId}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
-                {allowances ? <Table allowances={allowances}/> : <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>Connect your wallet to see the allowances linked to your account.</div>}
+                {allowances ? <Table showErrorModal={showErrorModal} setModalStatus={setModalStatus} accountAddress={accountAddress as THexAddress} allowances={allowances} setSnackbarMessage={setSnackbarMessage}/> : <BlankTable/>}
             </div>
         </DashboardLayout>
     )
@@ -29,8 +41,12 @@ interface IPageProps extends PageProps {
     };
 
     success?: string
+    accountAddress?: string
+    mockAccountPrivateKey?: string
+    allowances ?: IAllowance[]
 }
 
+// <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>Connect your wallet to see the allowances linked to your account.</div>
 /*
 const handleFieldChange = (e) => {
   const { name, value } = e.target;
