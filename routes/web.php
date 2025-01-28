@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AllowanceController;
 use App\Http\Controllers\TokenController;
 use App\Http\Controllers\DashboardController;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect('/dashboard');
@@ -25,6 +27,10 @@ Route::prefix('/allowance')->controller(AllowanceController::class)->group(funct
 });
 
 Route::get('/token/symbol', [TokenController::class, 'getSymbol']);
+
+Route::post('/set-account', [AccountController::class, 'setAccount']);
+
+Route::get('*', fn() => Inertia::render('Page404'));
 
 /*
 Route::get('/editallowance/{id?}', [AllowanceController::class, 'get'])
