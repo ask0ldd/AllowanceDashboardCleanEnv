@@ -7,12 +7,15 @@ import { useEffect, useState } from 'react';
 import { THexAddress } from '@/types/THexAddress';
 import useModalManager from '@/hooks/useModalManager';
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
+import useErrorHandler from '@/hooks/useErrorHandler';
 
 export default function Dashboard() {
 
     const { flash, success, accountAddress, mockAccountPrivateKey, allowances } = usePage<IPageProps>().props
 
-    const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
+    // const account: PrivateKeyAccount = privateKeyToAccount("0xc526ee95bf44d8fc405a158bb884d9d1238d99f0612e9f33d006bb0789009aaa") // !!! should use wallet instead
+
+    const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal, injectedComponentRef} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
 
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
 
@@ -25,7 +28,7 @@ export default function Dashboard() {
     // !!! deal with no wallet connected
 
     return(
-        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setModalStatus={setModalStatus} modalVisibility={modalVisibility} errorMessageRef={errorMessageRef} modalContentId={modalContentId}>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setModalStatus={setModalStatus} modalVisibility={modalVisibility} errorMessageRef={errorMessageRef} modalContentId={modalContentId} injectedComponentRef={injectedComponentRef}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 {allowances ? <Table showErrorModal={showErrorModal} setModalStatus={setModalStatus} accountAddress={accountAddress as THexAddress} allowances={allowances} setSnackbarMessage={setSnackbarMessage}/> : <BlankTable/>}
@@ -36,8 +39,9 @@ export default function Dashboard() {
 
 interface IPageProps extends PageProps {
     flash: {
-      success?: string;
+      success?: string
       message? : string
+      error? : string
     };
 
     success?: string
