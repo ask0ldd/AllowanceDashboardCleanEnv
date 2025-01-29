@@ -1,23 +1,22 @@
 import Header from "@/Components/Header/Header";
 import ConfirmRevocation from "@/Components/Modale/ConfirmRevocation";
 import ErrorAlert from "@/Components/Modale/ErrorAlert";
+import InjectedComponent from "@/Components/Modale/InjectedComponent";
 import Modal from "@/Components/Modale/Modal";
 import SendingTransaction from "@/Components/Modale/SendingTransaction";
 import Snackbar from "@/Components/Snackbar/Snackbar";
-import useModalManager from "@/hooks/useModalManager";
-import Dashboard from "@/Pages/Dashboard";
 import { Head } from "@inertiajs/react";
-import React from "react";
-import { PropsWithChildren, ReactNode } from "react";
+import React, { ReactNode } from "react";
+import { PropsWithChildren } from "react";
 
 export default function DashboardLayout({
-    mainStyle,
     children,
     snackbarMessage,
     modalVisibility,
     setModalStatus,
     errorMessageRef,
-    modalContentId
+    modalContentId,
+    injectedComponentRef
 }: PropsWithChildren<IProps>) {
 
     return(
@@ -34,6 +33,7 @@ export default function DashboardLayout({
                         'error' : <ErrorAlert errorMessage={errorMessageRef.current}/>,
                         'confirmRevocation' : <ConfirmRevocation/>,
                         'sending' : <SendingTransaction/>,
+                        'injectedComponent' : <InjectedComponent child={injectedComponentRef.current}/>
                     } [modalContentId]}
                 </Modal>
             }
@@ -50,5 +50,6 @@ interface IProps{
     snackbarMessage? : string
     modalVisibility : boolean
     errorMessageRef : React.RefObject<string>
+    injectedComponentRef : React.RefObject<ReactNode>
     modalContentId : string
 }

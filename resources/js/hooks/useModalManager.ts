@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* c8 ignore start */
-import { useState, useEffect, useCallback, useRef } from "react"
+import React from "react"
+import { useState, useEffect, useCallback, useRef, ReactNode } from "react"
 
 function useModalManager({initialVisibility, initialModalContentId} : IModalObject) {
 
@@ -9,15 +10,26 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     // show an error modal with errorMessageRef as a message
     const errorMessageRef = useRef("")
-    const showErrorModal = (errorMessage : string) =>{
+    function showErrorModal (errorMessage : string) {
         errorMessageRef.current = errorMessage
         setModalContentId("error")
         setModalVisibility(true)
     }
 
-    const setModalStatus = ({visibility, contentId} : {visibility : boolean, contentId? : string}) => {
+    const injectedComponentRef = useRef<ReactNode>(React.createElement('<div>'))
+    function showInjectionModal (injectedChild : ReactNode) {
+        injectedComponentRef.current = injectedChild
+        setModalContentId("injectedComponent")
+        setModalVisibility(true)
+    }
+
+    function setModalStatus({visibility, contentId} : {visibility : boolean, contentId? : string}) {
         setModalVisibility(visibility)
         if(contentId) setModalContentId(contentId)
+    }
+
+    function closeModal(){
+        setModalVisibility(false)
     }
 
     useEffect(() => {
@@ -52,7 +64,7 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     }, [modalVisibility])
 
-    return { modalVisibility, setModalVisibility, modalContentId, setModalContentId, setModalStatus, showErrorModal, errorMessageRef }
+    return { modalVisibility, setModalVisibility, closeModal, modalContentId, setModalContentId, setModalStatus, showErrorModal, showInjectionModal, errorMessageRef, injectedComponentRef }
 }
 
 export default useModalManager
