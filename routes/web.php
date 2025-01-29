@@ -28,7 +28,7 @@ Route::prefix('/allowance')->controller(AllowanceController::class)->group(funct
 
 Route::get('/token/symbol', [TokenController::class, 'getSymbol']);
 
-Route::post('/set-account', [AccountController::class, 'setAccount']);
+Route::post('/set-account', [AccountController::class, 'setSessionAccount']);
 
 Route::get('*', fn() => Inertia::render('Page404'));
 

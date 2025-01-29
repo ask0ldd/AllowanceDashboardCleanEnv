@@ -1,5 +1,5 @@
 import { THexAddress } from "./THexAddress";
 
-export function isHexAddress(value: unknown): value is THexAddress {
-    return typeof value === 'string' && /^0x[0-9A-Fa-f]+$/.test(value);
+export function isHexAddress(str: unknown): str is THexAddress {
+    return typeof str === 'string' && /^0x[0-9A-Fa-f]+$/.test(str);
 }
