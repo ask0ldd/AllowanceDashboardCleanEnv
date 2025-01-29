@@ -42,7 +42,11 @@ export default function InfoPanel(){
         };
     }, []);*/
 
-    if(!walletAddress) return (<div onClick={() => location.reload()}>Connect your wallet.</div>)
+    if(!walletAddress) return (
+    <div className='p-3 text-[18px] font-semibold w-[100%] max-w-[320px] bg-component-white flex flex-row rounded-3xl text-[#FFFFFF] justify-center items-center' onClick={() => location.reload()}>
+        <div className='w-[100%] h-[100%] bg-[#303030] rounded-[16px] flex flex-row justify-center items-center'>Connect your wallet.</div>
+    </div>
+    )
 
     return(
         <div onClick={() => location.reload()} className="flex flex-row gap-x-[10px] justify-center items-center h-20 bg-component-white rounded-3xl overflow-hidden p-3 pl-2 border border-solid border-dashcomponent-border">
