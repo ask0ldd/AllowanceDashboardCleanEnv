@@ -12,8 +12,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import type { Errors, PageProps } from "@inertiajs/core";
 import SpenderPanel from "@/Components/LateralPanels/SpenderPanel";
 import useModalManager from "@/hooks/useModalManager";
-import { PrivateKeyAccount } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import useErrorHandler from "@/hooks/useErrorHandler";
 
 export default function Allowance() {
@@ -22,11 +20,11 @@ export default function Allowance() {
 
     const [symbol, setSymbol] = useState<string | null>(null)
 
-    const account: PrivateKeyAccount = privateKeyToAccount(mockAccountPrivateKey as THexAddress) // !!! should use wallet instead
+    // const account: PrivateKeyAccount = privateKeyToAccount(mockAccountPrivateKey as THexAddress)
 
-    const {modalVisibility, closeModal, modalContentId, setModalStatus, errorMessageRef, showErrorModal, injectedComponentRef, showInjectionModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
+    const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
     // centralizing viem errors management
-    const {handleBalanceValidationErrors, handleSetAllowanceErrors} = useErrorHandler(showErrorModal)
+    const {handleBalanceValidationErrors, handleSetAllowanceErrors} = useErrorHandler(modal.showError)
 
     const mode = useRef<string>(existingAllowance ? 'edit' : 'new')
 
@@ -34,7 +32,7 @@ export default function Allowance() {
 
     const { data, setData, post, put, processing, errors, setError, clearErrors, transform } = useForm<IFormAllowance & {[key: string]: string | boolean}>({
         ERC20TokenAddress: existingAllowance?.tokenContractAddress ?? '',
-        ownerAddress: existingAllowance?.ownerAddress ?? accountAddress ?? '', // !!! mock account
+        ownerAddress: existingAllowance?.ownerAddress ?? accountAddress ?? '', // !!! should be wallet address
         spenderAddress: existingAllowance?.spenderAddress ?? '',
         spenderName : existingAllowance?.spenderName ?? '',
         amount : `${existingAllowance?.amount ?? 0}`, // !!! should i really be converting bigint to number
@@ -43,7 +41,7 @@ export default function Allowance() {
     })
 
     useEffect(() => {
-        if(flash?.error) showErrorModal(flash.error)
+        if(flash?.error) modal.showError(flash.error)
     }, [flash.error])
 
     // !!! should check if account address = metamask account address
@@ -55,71 +53,42 @@ export default function Allowance() {
         e.preventDefault()
         clearErrors()
         if(!await isAllowanceFormValid()) return // no error modal shown before returning since all non thrown errors are displayed within the form itself
-        await showConfirmationModale()
+        await processAllowance()
     }
 
-    async function showConfirmationModale(){ // should pass edit or create
-        // !!! unlimited alert for user
-        // !!! you will be able to revoke at any time message
-        showInjectionModal(
-            <div className="flex flex-col w-full gap-y-[20px]">
-                <div className="flex flex-shrink-0 justify-center items-center self-center w-[52px] h-[52px] bg-[#d0fae7] rounded-full">
-                    <div className="flex flex-grow-0 justify-center items-center w-[36px] h-[36px] bg-[#40CBADBB] rounded-full">
-                    </div>
-                </div>
-                <h3 className="w-full text-center font-bold text-[20px]">Confirm this transaction</h3>
-                <p className="flex flex-col w-full text-[14px] italic bg-[#ECEFF1] p-[12px] border-l border-[#303030] border-dashed">Accepting an Ethereum token allowance doesn't lock you in permanently. You can revoke permissions anytime through our platform.</p>
-                <button className="font-semibold h-[44px] w-full bg-orange-gradient rounded-[4px] text-offwhite shadow-[0_4px_8px_#F7644140]" onClick={processAllowanceTransaction}>
-                    Confirm {/* add cancel button */}
-                </button>
-            </div>
-        )
-    }
-
-    async function processAllowanceTransaction(){
-        closeModal()
+    async function processAllowance(){
+        modal.close()
         // !!! backend side : should check if trio not already existing
         try{
-            const receipt = await erc20TokenService.setAllowance({account, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) // !!! bigint
+            const receipt = !data.isUnlimited ?
+                await erc20TokenService.setAllowance({/*account, */contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) : // !!! bigint
+                    await erc20TokenService.setAllowanceToUnlimited({/*account, */contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
 
             if(receipt?.status != 'success') {
-                showErrorModal("Transaction receipt : The transaction has failed.")
+                modal.showError("Transaction receipt : The transaction has failed.")
                 return
             }
 
-            // setData('transactionHash', receipt.transactionHash)
+            // transform : wait for the update to be resolved vs setData : async
+            transform((data) => ({
+                ...data,
+                transactionHash: receipt.transactionHash,
+            }))
 
-            // !!! show success modale ?
-
-            /* !!!
-            const hash = await walletClient.sendTransaction({
-                to: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
-                value: 1000000000000000000n
-            })
-             */
-            
             if(mode.current == 'new'){
-                transform((data) => ({
-                    ...data,
-                    transactionHash: receipt.transactionHash,
-                }))
                 post('/allowance', {
                     preserveScroll: true,
-                    onSuccess: () => {}, // !!!
+                    onSuccess: () => {}, // !!! show success modale ?
                     onError: (e : Errors) => {
-                        if(e?.error) showErrorModal(e.error)
+                        if(e?.error) modal.showError(e.error)
                 }, 
                 })
             }else{
-                transform((data) => ({
-                    ...data,
-                    transactionHash: receipt.transactionHash,
-                }))
                 put('/allowance/' + route().params.id, {
                     preserveScroll: true,
-                    onSuccess: () => {}, // !!!
+                    onSuccess: () => {}, // !!! show success modale ?
                     onError: (e : Errors) => {
-                        if(e?.error) showErrorModal(e.error)
+                        if(e?.error) modal.showError(e.error)
                     }, 
                 })
             }
@@ -138,8 +107,9 @@ export default function Allowance() {
 
         // !!!! check contract supply / check invalid contract
         try{
-            if(!await isBalanceGreaterThanAmount(data.ERC20TokenAddress as THexAddress, data.ownerAddress as THexAddress, BigInt(data.amount))) { // !!! fix bigint / owner address replace with wallet address
-                setError('amount', 'This amount exceeds your balance.') // !!! add balance value
+            const balance = await erc20TokenService.getBalance(data.ERC20TokenAddress as THexAddress, data.ownerAddress as THexAddress)
+            if(!balance || BigInt(data.amount) > balance) { // !!! fix bigint / owner address replace with wallet address
+                setError('amount', `This amount exceeds your balance (${balance ?? 'unknown'}).`)
                 return false
             }
             return true
@@ -175,7 +145,7 @@ export default function Allowance() {
         return true
     }
 
-    async function isBalanceGreaterThanAmount(ERC20TokenAddress : THexAddress, ownerAddress : THexAddress, amount : bigint){ // !!! fix bigint / owner address replace with wallet address
+    /*async function isBalanceGreaterThanAmount(ERC20TokenAddress : THexAddress, ownerAddress : THexAddress, amount : bigint){ // !!! fix bigint / owner address replace with wallet address
         try{
             const balance = await erc20TokenService.getBalance(ERC20TokenAddress, ownerAddress)
             if(!balance || (amount > balance)) return false // !!!! fix biginit
@@ -183,7 +153,7 @@ export default function Allowance() {
         }catch(error){
             throw error
         }
-    }
+    }*/
 
     const textinputClasses = "px-[10px] mt-[6px] fill-w h-[44px] rounded-[4px] bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]"
     const labelClasses = "mt-[25px] font-medium text-[#474B55]"
@@ -223,7 +193,7 @@ export default function Allowance() {
     // !!! modal contract doesn't not exist
 
     return(
-        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setModalStatus={setModalStatus} modalVisibility={modalVisibility} errorMessageRef={errorMessageRef} modalContentId={modalContentId} injectedComponentRef={injectedComponentRef}>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} modal={modal}>
             <TokenPanel accountAddress={accountAddress ? accountAddress as THexAddress : undefined} ownedTokens={ownedTokens} setSnackbarMessage={setSnackbarMessage}/>
             <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[30px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[580px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>{!existingAllowance ? 'SET A NEW' : 'EDIT AN'} ALLOWANCE</h1>
@@ -365,3 +335,26 @@ function YourComponent() {
 }
 
     */
+
+/*async function showConfirmationModale(){ // should pass edit or create
+        // !!! add unlimited alert for user if needed
+        modal.showInjectionModal(
+            <div className="flex flex-col w-full gap-y-[20px]">
+                <div className="flex flex-shrink-0 justify-center items-center self-center w-[52px] h-[52px] bg-[#d0fae7] rounded-full">
+                    <div className="flex flex-grow-0 justify-center items-center w-[36px] h-[36px] bg-[#40CBADBB] rounded-full">
+                    </div>
+                </div>
+                <h3 className="w-full text-center font-bold text-[24px]">Confirm this transaction</h3>
+                <p className="flex flex-col w-full text-[14px] italic p-[12px] pt-[24px] border-t border-[#303030] border-dashed">Accepting an Ethereum token allowance doesn't lock you in permanently. You can revoke permissions anytime through our platform.</p>
+                <p className="flex flex-col w-full text-[14px] italic p-[12px] pt-[24px] border-t border-[#303030] border-solid">Accepting an Ethereum token allowance doesn't lock you in permanently. You can revoke permissions anytime through our platform.</p>
+                <div className="flex flex-row gap-x-[10px]">
+                    <button className="font-semibold flex-auto h-[44px] bg-[#ffffff] w-full bg-gradient-to-r from-[#303030] to-[#4D5054] rounded-[4px] text-offwhite">
+                        Cancel
+                    </button>
+                    <button onClick={processConfirmedAllowance} className="font-semibold flex-auto h-[44px] w-full bg-gradient-to-r from-[#2A9F8C] to-[#4DB85A] rounded-[4px] text-offwhite shadow-[0_4px_8px_#4DB85A40]">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        )
+    }*/

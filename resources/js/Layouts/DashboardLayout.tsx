@@ -6,18 +6,18 @@ import Modal from "@/Components/Modale/Modal";
 import SendingTransaction from "@/Components/Modale/SendingTransaction";
 import Snackbar from "@/Components/Snackbar/Snackbar";
 import { Head } from "@inertiajs/react";
+import { useSDK } from "@metamask/sdk-react";
 import React, { ReactNode } from "react";
 import { PropsWithChildren } from "react";
 
 export default function DashboardLayout({
     children,
     snackbarMessage,
-    modalVisibility,
-    setModalStatus,
-    errorMessageRef,
-    modalContentId,
-    injectedComponentRef
+    modal
 }: PropsWithChildren<IProps>) {
+
+    // const { sdk, connected, connecting, provider, chainId } = useSDK();
+    // const metamask = useSDK();
 
     return(
         <div className='bg-dash-grey w-full h-full min-h-full flex flex-col font-jost'>
@@ -27,14 +27,14 @@ export default function DashboardLayout({
             <main className="flex flex-row justify-between gap-x-[30px]">
                 {children}
             </main>
-            {modalVisibility && 
-                <Modal modalVisibility={modalVisibility} setModalStatus={setModalStatus} width="560px">
+            {modal.visibility && 
+                <Modal modalVisibility={modal.visibility} setModalStatus={modal.setStatus} width="560px">
                     {{
-                        'error' : <ErrorAlert errorMessage={errorMessageRef.current}/>,
+                        'error' : <ErrorAlert errorMessage={modal.errorMessageRef.current} closeModal={modal.close}/>,
                         'confirmRevocation' : <ConfirmRevocation/>,
                         'sending' : <SendingTransaction/>,
-                        'injectedComponent' : <InjectedComponent child={injectedComponentRef.current}/>
-                    } [modalContentId]}
+                        'injectedComponent' : <InjectedComponent child={modal.injectedComponentRef.current}/>
+                    } [modal.contentId]}
                 </Modal>
             }
         </div>
@@ -42,14 +42,18 @@ export default function DashboardLayout({
 }
 
 interface IProps{
-    setModalStatus : ({ visibility, contentId } : {
-        visibility: boolean
-        contentId?: string
-    }) => void
     mainStyle? : string
     snackbarMessage? : string
-    modalVisibility : boolean
-    errorMessageRef : React.RefObject<string>
-    injectedComponentRef : React.RefObject<ReactNode>
-    modalContentId : string
+    modal : {
+        visibility: boolean
+        setVisibility: React.Dispatch<React.SetStateAction<boolean>>
+        close: () => void
+        contentId : string
+        setContentId : React.Dispatch<React.SetStateAction<string>>
+        setStatus : ({ visibility, contentId }: { visibility: boolean, contentId?: string}) => void
+        showError : (errorMessage: string) => void
+        showInjectionModal : (injectedChild: ReactNode) => void
+        errorMessageRef : React.RefObject<string>
+        injectedComponentRef : React.RefObject<React.ReactNode>
+    }
 }
