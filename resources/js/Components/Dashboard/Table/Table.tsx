@@ -1,24 +1,25 @@
 // import trashIcon from '@/assets/icons/trashicon.svg'
 // import editIcon from '@/assets/icons/editicon.svg'
-import useModalManager from '@/hooks/useModalManager'
 import { useServices } from '@/hooks/useServices'
 import { IAllowance } from '@/types/IAllowance'
 import { THexAddress } from '@/types/THexAddress'
 import AddressUtils from '@/utils/AddressUtils'
 import ClipboardUtils from '@/utils/ClipboardUtils'
 import { router } from '@inertiajs/react'
-import { BaseError, EstimateGasExecutionError, HttpRequestError, InvalidAddressError, PrivateKeyAccount } from 'viem'
-import { AccountNotFoundError } from "@/errors/AccountNotFoundError";
+import { PrivateKeyAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import useErrorHandler from '@/hooks/useErrorHandler'
 import { Errors } from '@inertiajs/core/types/types'
+import NumberUtils from '@/utils/NumberUtils'
+import { ReactNode } from 'react'
 
-export default function Table({accountAddress, allowances, setSnackbarMessage, showErrorModal, setModalStatus} : IProps){
+export default function Table({accountAddress, mockAccountPrivateKey,  allowances, setSnackbarMessage, modal /*showErrorModal, showInjectionModal, closeModal*/} : IProps){
 
     const { erc20TokenService } = useServices()
-    const {handleBalanceValidationErrors, handleSetAllowanceErrors} = useErrorHandler(showErrorModal)
+    // const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal, injectedComponentRef, showInjectionModal, closeModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
+    const {handleSetAllowanceErrors} = useErrorHandler(modal.showError)
 
-    const account: PrivateKeyAccount = privateKeyToAccount("0xc526ee95bf44d8fc405a158bb884d9d1238d99f0612e9f33d006bb0789009aaa") // !!! should use wallet instead
+    // const account: PrivateKeyAccount = privateKeyToAccount(mockAccountPrivateKey as THexAddress) // !!! should use wallet instead
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
         await ClipboardUtils.copy(text)
@@ -26,12 +27,12 @@ export default function Table({accountAddress, allowances, setSnackbarMessage, s
     }
 
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
-        // setModalStatus({visibility : true, contentId : 'sending'})
+        modal.close()
         try{
-            const receipt =  await erc20TokenService.revokeAllowance({account, contractAddress, spenderAddress})
+            const receipt =  await erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
 
             if(receipt?.status != 'success') {
-                showErrorModal("Transaction receipt : The transaction has failed.")
+                modal.showError("Transaction receipt : The transaction has failed.")
                 return
             }
             // !!! show modale transaction
@@ -40,9 +41,9 @@ export default function Table({accountAddress, allowances, setSnackbarMessage, s
                 preserveState: true,
                 preserveScroll: true,
                 preserveUrl:true,
-                onSuccess : () => { }, // !!!
+                onSuccess : () => { console.log('router success') }, // !!!
                 onError: (e : Errors) => {
-                    if(e?.error) showErrorModal(e.error)
+                    if(e?.error) modal.showError(e.error)
                 }, 
             })
         }catch(e){
@@ -70,7 +71,7 @@ export default function Table({accountAddress, allowances, setSnackbarMessage, s
                     <td>{allowance.tokenContractSymbol}</td>
                     <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(accountAddress)} title={accountAddress}>{AddressUtils.maskAddress(accountAddress)}</td>
                     <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
-                    <td>{allowance.isUnlimited ? 'Unlimited' : allowance.amount /* !!! should be compared with devnet amount*/}</td>
+                    <td>{allowance.isUnlimited ? 'Unlimited' : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
                     <td>12/10/2024{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
                         <button onClick={() => router.visit('allowance/edit/'+allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
@@ -97,13 +98,21 @@ export default function Table({accountAddress, allowances, setSnackbarMessage, s
 
 interface IProps{
     accountAddress: THexAddress
+    mockAccountPrivateKey?: string
     allowances?: IAllowance[]
     setSnackbarMessage : (value: React.SetStateAction<string | null>) => void
-    showErrorModal : (mess :string) => void 
-    setModalStatus : ({ visibility, contentId } : {
+    modal : {
         visibility: boolean
-        contentId?: string
-    }) => void
+        setVisibility: React.Dispatch<React.SetStateAction<boolean>>
+        close: () => void
+        contentId : string
+        setContentId : React.Dispatch<React.SetStateAction<string>>
+        setStatus : ({ visibility, contentId }: { visibility: boolean, contentId?: string}) => void
+        showError : (errorMessage: string) => void
+        showInjectionModal : (injectedChild: ReactNode) => void
+        errorMessageRef : React.RefObject<string>
+        injectedComponentRef : React.RefObject<React.ReactNode>
+    }
 }
 
 /*
@@ -129,3 +138,26 @@ interface IProps{
             preserveState: true,
             preserveScroll: true,
         })*/
+
+
+                /*async function showConfirmationModale(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){ // should pass edit or create
+        // !!! add unlimited alert for user if needed
+        modal.showInjectionModal(
+            <div className="flex flex-col w-full gap-y-[20px]">
+                <div className="flex flex-shrink-0 justify-center items-center self-center w-[52px] h-[52px] bg-[#d0fae7] rounded-full">
+                    <div className="flex flex-grow-0 justify-center items-center w-[36px] h-[36px] bg-[#40CBADBB] rounded-full">
+                    </div>
+                </div>
+                <h3 className="w-full text-center font-bold text-[24px]">Confirm the following revocation</h3>
+                <p className="flex flex-col w-full text-[14px] italic bg-[#ECEFF1] p-[12px] border-l border-[#303030] border-dashed">Revoking won't</p>
+                <div className="flex flex-row gap-x-[10px]">
+                    <button className="font-semibold flex-auto h-[44px] w-full border-[3px] border-solid border-offblack rounded-[4px] text-offblack">
+                        Cancel
+                    </button>
+                    <button onClick={() => processConfirmedRevocation(allowanceId, contractAddress, spenderAddress)} className="font-semibold flex-auto h-[44px] w-full bg-gradient-to-r from-[#2A9F8C] to-[#4DB85A] rounded-[4px] text-offwhite shadow-[0_4px_8px_#4DB85A40]">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        )
+    }*/

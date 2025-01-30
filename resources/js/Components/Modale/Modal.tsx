@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ReactNode, useEffect, useRef } from 'react'
 import './Modal.css'
+import topmodal from '@/assets/topmodal4.png'
 
 function Modal({children, modalVisibility, setModalStatus, /*modalContent,*/ containerCSSClass, width} : IProps){
 
@@ -80,7 +81,7 @@ function Modal({children, modalVisibility, setModalStatus, /*modalContent,*/ con
     }
     
     return (
-        <dialog style={width ? {width : width} : {}} data-testid="modal" ref={dialogRef} 
+        <dialog style={width ? {width : width, backgroundImage: `linear-gradient(rgba(245, 247, 249, 0.2), rgba(245, 247, 249, 0.2)), url(${topmodal})`, backgroundSize: 'auto', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat'} : {backgroundImage: `linear-gradient(rgba(245, 247, 249, 0.5), rgba(245, 247, 249, 0.5)), url(${topmodal})`, backgroundSize: 'auto', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat'}} data-testid="modal" ref={dialogRef} 
             onClick={handleOnClick} onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}
             onCancel={(e) => e.preventDefault()}>
                 <div className='modalHorizPadding'></div>

@@ -64,7 +64,7 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     }, [modalVisibility])
 
-    return { modalVisibility, setModalVisibility, closeModal, modalContentId, setModalContentId, setModalStatus, showErrorModal, showInjectionModal, errorMessageRef, injectedComponentRef }
+    return { visibility : modalVisibility, setVisibility : setModalVisibility, close : closeModal, contentId : modalContentId, setContentId : setModalContentId, setStatus : setModalStatus, showError : showErrorModal, showInjectionModal, errorMessageRef, injectedComponentRef }
 }
 
 export default useModalManager
