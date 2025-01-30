@@ -13,10 +13,6 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'showDashboard'])->name('dashboard');
 
-/*Route::get('/newallowance', function () {
-    $tokenList = app(TokenController::class)->getAll();
-    return Inertia::render('Allowance', ['tokenList' => $tokenList]);
-})->name('newallowance');*/
 Route::prefix('/allowance')->controller(AllowanceController::class)->group(function () {
     Route::get('/new', [AllowanceController::class, 'showNewForm'])->name('newallowance');
     Route::get('/edit/{id?}', [AllowanceController::class, 'showEditForm'])->name('editallowance')->defaults('id', 0);
@@ -31,16 +27,3 @@ Route::get('/token/symbol', [TokenController::class, 'getSymbol']);
 Route::post('/set-account', [AccountController::class, 'setSessionAccount']);
 
 Route::get('*', fn() => Inertia::render('Page404'));
-
-/*
-Route::get('/editallowance/{id?}', [AllowanceController::class, 'get'])
-    ->name('editallowance')
-    ->defaults('id', 0);
-*/
-
-/*Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->name('dashboard');*/
-
-
-// Route::get('/', [AppController::class, 'dashboard']);
