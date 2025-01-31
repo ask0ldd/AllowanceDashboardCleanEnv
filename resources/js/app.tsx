@@ -14,16 +14,16 @@ createInertiaApp({
         logging:{
             developerMode: false,
           },
-          // communicationServerUrl: process.env.REACT_APP_COMM_SERVER_URL,
-          checkInstallationImmediately: false, // This will automatically connect to MetaMask on page load
-          dappMetadata: {
-            name: "Demo React App",
-            url: window.location.host,
-          }
+        // communicationServerUrl: process.env.REACT_APP_COMM_SERVER_URL,
+        checkInstallationImmediately: false, // This will automatically connect to MetaMask on page load
+        dappMetadata: {
+          name: "Allowance Revocation App",
+          // url: window.location.host,
+        }
       }}>
-        <ServicesProvider>
-          <App {...props} />
-        </ServicesProvider>
+          <ServicesProvider>
+            <App {...props} />
+          </ServicesProvider>
       </MetaMaskProvider>
     )
   },

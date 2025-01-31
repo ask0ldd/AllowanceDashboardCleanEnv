@@ -4,13 +4,16 @@ import { IAllowance } from '@/types/IAllowance';
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from "@inertiajs/core";
 import { useEffect, useState } from 'react';
-import { THexAddress } from '@/types/THexAddress';
 import useModalManager from '@/hooks/useModalManager';
+import { router } from '@inertiajs/react'
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
+import { useSDK } from '@metamask/sdk-react';
 
 export default function Dashboard() {
 
-    const { flash, success, accountAddress, mockAccountPrivateKey, allowances } = usePage<IPageProps>().props
+    const { flash, allowances } = usePage<IPageProps>().props
+
+    const { connected } = useSDK()
 
     const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
 
@@ -20,17 +23,61 @@ export default function Dashboard() {
         if(flash?.success) setSnackbarMessage(flash.success)
     }, [flash.success])
 
-    // !!! if accountAddress && mockAccountAddress null then BlankTable
-    // !!! deal with no wallet connected
+    const [showRevoked, setShowRevoked] = useState(false)
+    function handleDisplayRevoked(e : React.ChangeEvent<HTMLInputElement>){
+        setShowRevoked(prev => !prev)
+        router.get(route('dashboard'), { showRevoked : e.currentTarget.checked, search: searchValue }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            preserveUrl : true,
+            only: ['allowances', 'flash', 'success'],
+        });
+    }
+
+    const [showOnlyUnlimited, setOnlyUnlimited] = useState(false)
+    function handleDisplayUnlimitedOnly(e : React.ChangeEvent<HTMLInputElement>){ // !!!
+        setOnlyUnlimited(prev => !prev)
+        /*router.get(route('dashboard'), { showRevoked : e.currentTarget.checked, search: searchValue }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            preserveUrl : true,
+            only: ['allowances'],
+        });*/
+    }
+
+    const [searchValue, setSearchValue] = useState("")
+    function handleSearchInput(e : React.KeyboardEvent<HTMLInputElement>){
+        setSearchValue(e.currentTarget.value)
+        router.get(route('dashboard'), { showRevoked, search: e.currentTarget.value }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            preserveUrl : true,
+            only: ['allowances'],
+        });
+    } // !!! debounce?*/
 
     return(
         <DashboardLayout snackbarMessage={snackbarMessage ?? ""} modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
-                {allowances ? 
+                <div className='flex justify-between h-[44px] mt-[25px]'>
+                    <input placeholder='Search' className='px-[18px] w-[240px] h-[42px] mt-auto rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]' type="search" onInput={handleSearchInput} value={searchValue} />
+                    <div className='flex gap-x-[10px]'>
+                        <div className='flex gap-x-[10px] bg-[#ffffff] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
+                            <label id='unlimitedLabel' className='flex items-center'>Unlimited only</label>
+                            <input aria-labelledby='unlimitedLabel' type="checkbox" onChange={handleDisplayUnlimitedOnly}/>
+                        </div>
+                        <div className='flex gap-x-[10px] bg-[#ffffff] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
+                            <label id='revokedLabel' className='flex items-center'>Revoked allowances</label>
+                            <input aria-labelledby='revokedLabel' type="checkbox" onChange={handleDisplayRevoked}/>
+                        </div>
+                    </div>
+                </div>
+                {allowances && connected ? 
                     <Table 
-                        mockAccountPrivateKey={mockAccountPrivateKey} 
-                        accountAddress={accountAddress as THexAddress} 
                         allowances={allowances} 
                         setSnackbarMessage={setSnackbarMessage}
                         modal={modal}

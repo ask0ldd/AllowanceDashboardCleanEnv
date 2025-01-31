@@ -20,7 +20,7 @@ export const ServicesContext = createContext<ServicesContextType>(defaultContext
 interface ServicesProviderProps {
     children: ReactNode
     customServices?: Partial<ServicesContextType>
-  }
+}
   
 export function ServicesProvider({ children, customServices }: ServicesProviderProps) {
     const contextValue: ServicesContextType = {
