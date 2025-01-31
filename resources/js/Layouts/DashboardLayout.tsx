@@ -16,9 +16,6 @@ export default function DashboardLayout({
     modal
 }: PropsWithChildren<IProps>) {
 
-    // const { sdk, connected, connecting, provider, chainId } = useSDK();
-    // const metamask = useSDK();
-
     return(
         <div className='bg-dash-grey w-full h-full min-h-full flex flex-col font-jost'>
             <Snackbar message={snackbarMessage ? snackbarMessage : undefined}/>
