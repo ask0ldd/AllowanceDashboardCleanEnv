@@ -16,7 +16,7 @@ class Allowance extends Model
     ];
 
     protected $casts = [
-        'amount' => 'integer',
+        'amount' => 'string',
         'token_contract_id' => 'integer',
         'owner_address_id' => 'integer',
         'spender_address_id' => 'integer',

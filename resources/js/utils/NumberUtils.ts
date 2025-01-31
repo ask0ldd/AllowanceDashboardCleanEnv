@@ -4,7 +4,7 @@ export default class NumberUtils{
      * @param {number} num - The number to check.
      * @returns {boolean} True if the number is a float, false otherwise.
      */
-    static isFloat(num : number) {
+    static isFloat(num : number): boolean {
         return Number(num) === num && num % 1 !== 0
     }
 

@@ -11,7 +11,8 @@ Route::get('/', function () {
     return redirect('/dashboard');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'showDashboard'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'showDashboard'])->name('dashboard')/*->where('path', '.*')*/;
+// Route::get('/dashboard/revoked', [DashboardController::class, 'showDashboardWithRevoked']);
 
 Route::prefix('/allowance')->controller(AllowanceController::class)->group(function () {
     Route::get('/new', [AllowanceController::class, 'showNewForm'])->name('newallowance');
@@ -26,4 +27,6 @@ Route::get('/token/symbol', [TokenController::class, 'getSymbol']);
 
 Route::post('/set-account', [AccountController::class, 'setSessionAccount']);
 
-Route::get('*', fn() => Inertia::render('Page404'));
+Route::fallback(function () {
+    return Inertia::render('Page404');
+});
