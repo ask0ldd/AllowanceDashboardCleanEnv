@@ -1,25 +1,20 @@
-// import trashIcon from '@/assets/icons/trashicon.svg'
-// import editIcon from '@/assets/icons/editicon.svg'
 import { useServices } from '@/hooks/useServices'
 import { IAllowance } from '@/types/IAllowance'
 import { THexAddress } from '@/types/THexAddress'
 import AddressUtils from '@/utils/AddressUtils'
 import ClipboardUtils from '@/utils/ClipboardUtils'
 import { router } from '@inertiajs/react'
-import { PrivateKeyAccount } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
 import useErrorHandler from '@/hooks/useErrorHandler'
 import { Errors } from '@inertiajs/core/types/types'
 import NumberUtils from '@/utils/NumberUtils'
 import { ReactNode } from 'react'
+import DateUtils from '@/utils/DateUtils'
 
-export default function Table({accountAddress, mockAccountPrivateKey,  allowances, setSnackbarMessage, modal /*showErrorModal, showInjectionModal, closeModal*/} : IProps){
+export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
     const { erc20TokenService } = useServices()
-    // const {modalVisibility, modalContentId, setModalStatus, errorMessageRef, showErrorModal, injectedComponentRef, showInjectionModal, closeModal} = useModalManager({initialVisibility : false, initialModalContentId : "error"})
-    const {handleSetAllowanceErrors} = useErrorHandler(modal.showError)
 
-    // const account: PrivateKeyAccount = privateKeyToAccount(mockAccountPrivateKey as THexAddress) // !!! should use wallet instead
+    const {handleSetAllowanceErrors} = useErrorHandler(modal.showError)
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
         await ClipboardUtils.copy(text)
@@ -27,21 +22,23 @@ export default function Table({accountAddress, mockAccountPrivateKey,  allowance
     }
 
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
-        modal.close()
         try{
             const receipt =  await erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
+            console.log("revoke")
 
             if(receipt?.status != 'success') {
                 modal.showError("Transaction receipt : The transaction has failed.")
                 return
             }
-            // !!! show modale transaction
+            // !!! show modale success transaction
             // setModalStatus({visibility : true, contentId : 'confirmRevocation'})
             router.put(`/allowance/revoke/${allowanceId}`, {_method: 'put',}, { // put throws this error : The PUT method is not supported for route dashboard. Supported methods: GET, HEAD.
                 preserveState: true,
                 preserveScroll: true,
                 preserveUrl:true,
-                onSuccess : () => { console.log('router success') }, // !!!
+                onSuccess : () => { 
+                    console.log('Revocation successful') 
+                }, // !!!
                 onError: (e : Errors) => {
                     if(e?.error) modal.showError(e.error)
                 }, 
@@ -51,12 +48,18 @@ export default function Table({accountAddress, mockAccountPrivateKey,  allowance
         }
     }
 
+    function handleEditButtonClick(allowanceId : number){
+        router.visit('allowance/edit/' + allowanceId)
+        /*console.log("error")
+        modal.showError("You must connect your wallet to access your allowances.")*/
+    }
+
     // get allowances from DB
-    // check if these allowances exists into the chain
+    // check if these allowances exists on the chain
 
     return(
         <>
-        <table className="text-left text-[14px] mt-[28px]">
+        <table className="text-left text-[14px] mt-[15px]">
             <thead>
                 <tr>
                     <th className="w-[80px]"></th><th className="w-[140px]">Token name</th><th className="w-[150px]">Token address</th><th className="w-[100px]">Symbol</th><th className="w-[150px]">Owner address</th><th className="w-[150px]">Spender address</th><th className="w-[150px]">Amount</th><th className="w-[110px]">Update</th><th className="w-[250px] text-center">Actions</th>
@@ -69,15 +72,15 @@ export default function Table({accountAddress, mockAccountPrivateKey,  allowance
                     <td>{allowance.tokenContractName}</td>
                     <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.tokenContractAddress)} title={allowance.tokenContractAddress}>{AddressUtils.maskAddress(allowance.tokenContractAddress)}</td>
                     <td>{allowance.tokenContractSymbol}</td>
-                    <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(accountAddress)} title={accountAddress}>{AddressUtils.maskAddress(accountAddress)}</td>
+                    <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}>{AddressUtils.maskAddress(allowance.ownerAddress)}</td>
                     <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
-                    <td>{allowance.isUnlimited ? 'Unlimited' : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
-                    <td>12/10/2024{/* !!! updatedAt but format*/}</td>
+                    <td>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "revoked" : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
+                    <td>{DateUtils.toEUFormat(allowance.updatedAt)}{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
-                        <button onClick={() => router.visit('allowance/edit/'+allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
+                        <button onClick={() => handleEditButtonClick(allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
                             Edit
                         </button>
-                        <button onClick={() => handleRevokeButtonClick(allowance.id, allowance.tokenContractAddress, allowance.spenderAddress)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[6px] font-semibold rounded-full bg-desat-orange-gradient border-2 border-[#43484c] text-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] textShadow hover:shadow-[0_1px_0_#FFFFFF] hover:bg-orange-gradient">
+                        {/* disabled={allowance.amount == 0n && !allowance.isUnlimited} */}<button onClick={() => handleRevokeButtonClick(allowance.id, allowance.tokenContractAddress, allowance.spenderAddress)} className={"flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[6px] font-semibold rounded-full bg-desat-orange-gradient border-2 border-[#43484c] text-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] textShadow" + (allowance.amount == 0n && !allowance.isUnlimited ? ' opacity-40 cursor-default' : ' hover:shadow-[0_1px_0_#FFFFFF] hover:bg-orange-gradient')}>
                             Revoke
                         </button>
                     </td>
@@ -85,20 +88,20 @@ export default function Table({accountAddress, mockAccountPrivateKey,  allowance
             ))}
             </tbody>
         </table>
-        <div className='ml-auto mt-[15px] flex flex-row gap-x-[8px]'>
-            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>1</button>
-            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>2</button>
+        <div className='ml-auto mt-[15px] flex flex-row gap-x-[6px]'>
+            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>1</button>
+            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>2</button>
             ...
-            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>9</button>
-            <button className='flex justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] rounded-[4px]'>10</button>
+            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>9</button>
+            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>10</button>
         </div>
         </>
     )
 }
 
 interface IProps{
-    accountAddress: THexAddress
-    mockAccountPrivateKey?: string
+    /*accountAddress: THexAddress
+    mockAccountPrivateKey?: string*/
     allowances?: IAllowance[]
     setSnackbarMessage : (value: React.SetStateAction<string | null>) => void
     modal : {
