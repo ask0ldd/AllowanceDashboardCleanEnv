@@ -72,3 +72,38 @@ dialog .modalVertPaddingNChildrenContainer {
 .pulse-element {
     animation: pulse 2s infinite;
 }
+
+@keyframes rotate {
+    0%,
+    20% {
+        transform: rotate(0deg);
+    }
+    25%,
+    45% {
+        transform: rotate(360deg);
+    }
+    50%,
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.element {
+    animation: rotate 5s infinite;
+}
+
+.element1 {
+    animation-delay: 0s;
+}
+.element2 {
+    animation-delay: -4s;
+}
+.element3 {
+    animation-delay: -3s;
+}
+.element4 {
+    animation-delay: -2s;
+}
+.element5 {
+    animation-delay: -1s;
+}

@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { createInertiaApp } from '@inertiajs/react'
 import { ServicesProvider } from './context/ServicesContext'
 import { MetaMaskProvider } from '@metamask/sdk-react'
+import { EtherClientsProvider } from './context/EtherClientsContext'
 
 createInertiaApp({
   resolve: name => {
@@ -15,15 +16,17 @@ createInertiaApp({
             developerMode: false,
           },
         // communicationServerUrl: process.env.REACT_APP_COMM_SERVER_URL,
-        checkInstallationImmediately: false, // This will automatically connect to MetaMask on page load
+        checkInstallationImmediately: false,
         dappMetadata: {
           name: "Allowance Revocation App",
           // url: window.location.host,
         }
       }}>
-          <ServicesProvider>
-            <App {...props} />
-          </ServicesProvider>
+          <EtherClientsProvider>
+            <ServicesProvider>
+              <App {...props} />
+            </ServicesProvider>
+          </EtherClientsProvider>
       </MetaMaskProvider>
     )
   },

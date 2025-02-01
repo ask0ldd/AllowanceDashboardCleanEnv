@@ -37,4 +37,25 @@ export default class NumberUtils{
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
         return parts.join(',')
     }
+
+    static formatNumber(num: number | bigint): string {
+        const absNum = Math.abs(Number(num))
+        const sign = num < 0 ? "-" : ""
+        
+        if (absNum < 1000) {
+            return sign + absNum.toString()
+        }
+        
+        const exponent = Math.floor(Math.log10(absNum))
+        const mantissa = absNum / Math.pow(10, Math.floor(exponent / 3) * 3)
+        
+        if (mantissa >= 1 && mantissa < 10000) {
+            return `${sign}${mantissa.toFixed(0)} * 10^${Math.floor(exponent / 3) * 3}`
+        } else {
+            const adjustedMantissa = mantissa / 1000
+            const adjustedExponent = Math.floor(exponent / 3) * 3 + 3
+            return `${sign}${adjustedMantissa.toFixed(3).replace(/\.?0+$/, '')} * 10^${adjustedExponent}`
+        }
+    }
+    
 }
