@@ -8,6 +8,7 @@ import useModalManager from '@/hooks/useModalManager';
 import { router } from '@inertiajs/react'
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
 import { useSDK } from '@metamask/sdk-react';
+import checked from '@/assets/checked.png'
 
 export default function Dashboard() {
 
@@ -24,27 +25,37 @@ export default function Dashboard() {
     }, [flash.success])
 
     const [showRevoked, setShowRevoked] = useState(false)
-    function handleDisplayRevoked(e : React.ChangeEvent<HTMLInputElement>){
-        setShowRevoked(prev => !prev)
-        router.get(route('dashboard'), { showRevoked : e.currentTarget.checked, search: searchValue }, {
+    function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
+        const newShowRevoked = !showRevoked
+        setShowRevoked(prevShowRevoked => !prevShowRevoked)
+        router.get(route('dashboard'), {
+            showRevoked: newShowRevoked,
+            search: searchValue,
+            showUnlimitedOnly: showOnlyUnlimited
+        }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            preserveUrl: true,
+            only: ['allowances', 'flash', 'success'],
+        });
+    }
+
+    const [showOnlyUnlimited, setOnlyUnlimited] = useState(false)
+    function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){ // !!!
+        const newUnlimited = !showOnlyUnlimited
+        setOnlyUnlimited(prev => !prev)
+        router.get(route('dashboard'), { 
+            showRevoked, 
+            search: searchValue, 
+            showUnlimitedOnly : newUnlimited
+        }, {
             preserveState: true,
             replace: true,
             preserveScroll: true,
             preserveUrl : true,
             only: ['allowances', 'flash', 'success'],
         });
-    }
-
-    const [showOnlyUnlimited, setOnlyUnlimited] = useState(false)
-    function handleDisplayUnlimitedOnly(e : React.ChangeEvent<HTMLInputElement>){ // !!!
-        setOnlyUnlimited(prev => !prev)
-        /*router.get(route('dashboard'), { showRevoked : e.currentTarget.checked, search: searchValue }, {
-            preserveState: true,
-            replace: true,
-            preserveScroll: true,
-            preserveUrl : true,
-            only: ['allowances'],
-        });*/
     }
 
     const [searchValue, setSearchValue] = useState("")
@@ -65,14 +76,18 @@ export default function Dashboard() {
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
                     <input placeholder='Search' className='px-[18px] w-[240px] h-[42px] mt-auto rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]' type="search" onInput={handleSearchInput} value={searchValue} />
-                    <div className='flex gap-x-[10px]'>
-                        <div className='flex gap-x-[10px] bg-[#ffffff] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
-                            <label id='unlimitedLabel' className='flex items-center'>Unlimited only</label>
-                            <input aria-labelledby='unlimitedLabel' type="checkbox" onChange={handleDisplayUnlimitedOnly}/>
+                    <div className='flex  gap-x-[10px]'>
+                        <div onClick={handleDisplayUnlimitedOnly} className='cursor-pointer flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
+                            <label id='unlimitedLabel' className='cursor-pointer flex items-center text-[14px]'>Unlimited only</label>
+                            <div role="checkbox" aria-checked={showOnlyUnlimited} className={'cursor-pointer border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showOnlyUnlimited ? ' bg-[#E8EBED]' : ' bg-[#48494c]')}>
+                                {showOnlyUnlimited && <img src={checked}/>}
+                            </div>
                         </div>
-                        <div className='flex gap-x-[10px] bg-[#ffffff] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
-                            <label id='revokedLabel' className='flex items-center'>Revoked allowances</label>
-                            <input aria-labelledby='revokedLabel' type="checkbox" onChange={handleDisplayRevoked}/>
+                        <div onClick={handleDisplayRevoked} className='cursor-pointer flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
+                            <label id='revokedLabel' className='cursor-pointer flex items-center text-[14px]'>Revoked allowances</label>
+                            <div role="checkbox" aria-checked={showRevoked} className={'cursor-pointer border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#E8EBED]' : ' bg-[#48494c]')}>
+                                {showRevoked && <img src={checked}/>}
+                            </div>
                         </div>
                     </div>
                 </div>
