@@ -1,11 +1,39 @@
 import { THexAddress } from "@/types/THexAddress"
-import { createWalletClient, custom, WalletClient } from "viem"
+import { createPublicClient, createWalletClient, custom, WalletClient } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { hardhat } from "viem/chains"
+import { hardhat, holesky } from "viem/chains"
 
 export default class MetaMaskService{
 
-    walletClient : WalletClient | undefined = undefined
+    async getWalletClient(){
+        try{
+            if(!window.ethereum) throw new Error("No wallet extension active.")
+            const [account] = await window.ethereum.request({ 
+                method: 'eth_requestAccounts' 
+            })
+            return createWalletClient({
+                account, // : address,
+                chain: holesky,
+                transport : custom(window.ethereum)
+            })
+        }catch(e){
+            console.error(e)
+        }
+    }
+
+    async getPublicClient(){
+        try{
+            if(!window.ethereum) throw new Error("No wallet extension active.")
+            return createPublicClient({
+                chain: holesky,
+                transport : custom(window.ethereum)
+            })
+        }catch(e){
+            console.error(e)
+        }
+    }
+
+    /*walletClient : WalletClient | undefined = undefined
 
     async connectToWallet(){
         if (typeof window.ethereum !== 'undefined') {
@@ -50,7 +78,7 @@ export default class MetaMaskService{
             console.error('Failed to connect:', error)
             throw error
         }
-    }
+    }*/
 
     /*async getWalletAddress(){
         if (typeof window.ethereum !== 'undefined') {

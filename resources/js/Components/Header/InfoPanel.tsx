@@ -5,25 +5,33 @@ import { THexAddress } from '@/types/THexAddress'
 import { isHexAddress } from '@/types/typeguards'
 import ClipboardUtils from '@/utils/ClipboardUtils'
 import { useSDK } from '@metamask/sdk-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
 
 export default function InfoPanel(){
     const { sdk, connected, provider } = useSDK()
     
-    const { metamaskService, localStorageService, erc20TokenService } = useServices()
+    const { metamaskService, localStorageService } = useServices()
+
+    const { publicClient, walletClient, setWalletClient, flushWClient } = useEtherClientsContext()
 
     const [walletAddress, setWalletAddress] = useState<THexAddress | null>(() => {
         const storageAddress = localStorageService.retrieveWalletAddress()
         return isHexAddress(storageAddress) ? storageAddress : null
-    })
-      
+    }) // !!! keeping account active when switching pages // through backend instead?
+     
     useEffect(() => {
+        async function setWClient(){
+            const wClient = await metamaskService.getWalletClient()
+            if(wClient) setWalletClient(wClient)
+        }
+
         if (walletAddress) {
             localStorageService.storeWalletAddress(walletAddress)
-            erc20TokenService.mountWalletClient(walletAddress)
+            setWClient()
         } else {
             localStorageService.deleteWalletAddress()
-            erc20TokenService.unmountWalletClient()
+            flushWClient()
         }
     }, [walletAddress])
 
@@ -37,31 +45,14 @@ export default function InfoPanel(){
                 }
                 setWalletAddress(null)
                 localStorageService.deleteWalletAddress()
+                flushWClient()
             })
             // return () => {
             //     provider.removeListener('accountsChanged', () => {});
             //     window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-            // };
+            // }; !!! avoid listener stackings
         }
     }, [provider])
-                
-    async function requestMetamaskConnection(){ // !!! move to metamask service
-        try{
-            // const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
-            const accounts = await sdk?.connect()
-            if(accounts && accounts.length > 0 && isHexAddress(accounts[0])) setWalletAddress(accounts[0])
-        }catch(err){
-            console.error(err)
-        }
-    }
-
-    /*const requestMade = useRef(false)
-    useEffect(() => {
-        if(!connected && !requestMade.current) {
-            requestMetamaskConnection()
-            requestMade.current = true
-        }
-    }, [connected])*/
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
         await ClipboardUtils.copy(text)
@@ -71,7 +62,10 @@ export default function InfoPanel(){
     async function handleConnectToMetaMaskClick() {
         try {
             const accounts = await sdk?.connect()
-            if(accounts && accounts.length > 0 && isHexAddress(accounts[0])) setWalletAddress(accounts[0])
+            if(accounts && accounts.length > 0 && isHexAddress(accounts[0])) {
+                setWalletAddress(accounts[0])
+                localStorageService.storeWalletAddress(accounts[0])
+            }
         } catch (err) {
             console.error("Failed to connect", err)
         }
@@ -92,13 +86,27 @@ export default function InfoPanel(){
     )
 
     return(
-        <div className="flex flex-row gap-x-[10px] justify-center items-center h-20 bg-component-white rounded-3xl overflow-hidden p-3 pl-2 border border-solid border-dashcomponent-border">
+        <div className="flex flex-row gap-x-[10px] justify-center items-center h-20 bg-component-white rounded-3xl overflow-hidden p-3 px-2 border border-solid border-dashcomponent-border">
             <div className='flex justify-center items-center bg-gradient-to-r from-[#303030] to-[#4C5054] border-[1px] shadow-[0_2px_4px_#5B93EC40,0_4px_8px_#5B93EC40] border-solid border-[hsl(225,3%,20%)] w-[64px] h-[64px] rounded-[16px]'><img className='w-[42px]' src={metamaskLogo}/></div>
-            <span onClick={() => handleCopyToClipboard(walletAddress)}>{walletAddress}</span>
-            <button onClick={handleDisconnect}>disco</button>
+            <div className='flex flex-col text-[14px] text-[#303030] gap-y-[5px]' onClick={() => handleCopyToClipboard(walletAddress)}>
+                <span className='font-semibold text-[16px] text-[#BCC2C8] flex items-center gap-x-[10px]'><div className='w-[10px] h-[10px] bg-green-400 rounded-full'></div>YOUR METAMASK WALLET IS ACTIVE.</span>
+                {/*<span className='text-[13px]'>Here is your current wallet address :</span>*/}
+                <hr className='mb-[2px]'/>
+                <span className='cursor-copy'>{walletAddress}</span>
+            </div>
+            <button className='flex justify-center items-center flex-shrink-0 flex-grow-0 bg-[#E8EBED] w-[64px] h-[64px] rounded-[16px]' onClick={handleDisconnect}>disco</button>
         </div>
     )
 }
+
+    /*const requestMade = useRef(false)
+    useEffect(() => {
+        if(!connected && !requestMade.current) {
+            requestMetamaskConnection()
+            requestMade.current = true
+        }
+    }, [connected])*/
+
 
 /*async function handleConnectToWallet(){
         try{

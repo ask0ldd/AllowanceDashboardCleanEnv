@@ -1,7 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* c8 ignore start */
 import React from "react"
-import { useState, useEffect, useCallback, useRef, ReactNode } from "react"
+import { useState, useEffect, useRef, ReactNode } from "react"
 
 function useModalManager({initialVisibility, initialModalContentId} : IModalObject) {
 
