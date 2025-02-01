@@ -1,13 +1,10 @@
 import hhTokens from "@/constants/deployedTokens";
 import { THexAddress } from "@/types/THexAddress";
-import { createPublicClient, createWalletClient, custom, encodeFunctionData, http, parseAbi, parseEther, PublicActions, publicActions, PublicClient, ReadContractReturnType, TimeoutError, TransactionReceipt, WalletClient } from "viem"
-import { privateKeyToAccount } from "viem/accounts";
-import { hardhat, holesky } from 'viem/chains'
+import { encodeFunctionData, parseAbi, PublicClient, ReadContractReturnType, TransactionReceipt, WalletClient } from "viem"
+import { holesky } from 'viem/chains'
 
 export default class ERC20TokenService{
-    publicClient : PublicClient | undefined
-    walletClient : WalletClient /*& PublicActions*/ | undefined
-
+    
     readonly ERC20abis = {
         setAllowance : parseAbi(['function approve(address spender, uint256 amount) returns (bool)']),
         getAllowance : parseAbi(['function allowance(address owner, address spender) returns (uint256)']),
@@ -20,47 +17,10 @@ export default class ERC20TokenService{
 
     private deployedTokens = hhTokens
 
-    async mountWalletClient(address : THexAddress){ // !!! try catch improve
+    async getTokenName(publicClient : PublicClient, tokenAddress : THexAddress){
         try{
-            if(!window.ethereum) return
-            
-            // const [address] = await window.ethereum.request({ method: 'eth_requestAccounts' }) // !!! request modal?
-            const [account] = await window.ethereum.request({ 
-                method: 'eth_requestAccounts' 
-            })
-            this.walletClient = createWalletClient({
-                account, // : address,
-                chain: holesky,
-                transport : custom(window.ethereum)
-            })//.extend(publicActions) // can act as a public client
-
-            this.publicClient = createPublicClient({
-                chain: holesky,
-                transport : custom(window.ethereum) // http('http://127.0.0.1:8545/')// custom(window.ethereum)
-            })        
-
-        }catch(e){
-            console.error(e)
-        }
-    }
-
-    unmountWalletClient(){
-        this.walletClient = undefined
-    }
-
-    /*refreshPublicClient(){
-        const client = createPublicClient({
-            chain: hardhat,
-            transport: window.ethereum ? custom(window.ethereum) : http('http://127.0.0.1:8545') // !!!!
-        })
-        this.publicClient = client
-        return client
-    }*/
-
-    async getTokenName(tokenAddress : THexAddress){
-        try{
-            if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
-            const tokenName = await this.publicClient.readContract({
+            // if(publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            const tokenName = await publicClient.readContract({
             address: tokenAddress,
             abi: [{ 
                 name: 'name',
@@ -79,9 +39,9 @@ export default class ERC20TokenService{
         }
     }
 
-    async getTokenNSymbol(tokenAddress: THexAddress): Promise<{ name: string, symbol: string }> {
+    async getTokenNSymbol(publicClient : PublicClient, tokenAddress: THexAddress): Promise<{ name: string, symbol: string }> {
         try {
-            if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
             const nameAbi = [{ name: 'name', type: 'function', outputs: [{ type: 'string' }] }]
             const symbolAbi = [{ name: 'symbol', type: 'function', outputs: [{ type: 'string' }] }]
     
@@ -89,11 +49,11 @@ export default class ERC20TokenService{
             const symbolContract = { address: tokenAddress, abi: symbolAbi }
     
             const [name, symbol] = await Promise.all([
-                this.publicClient.readContract({
+                publicClient.readContract({
                     ...nameContract,
                     functionName: 'name',
                 }),
-                this.publicClient.readContract({
+                publicClient.readContract({
                     ...symbolContract,
                     functionName: 'symbol',
                 })
@@ -110,11 +70,11 @@ export default class ERC20TokenService{
         }
     }
 
-    async getTotalSupply(contractAddress : `0x${string}`) : Promise<string>{
+    async getTotalSupply(publicClient : PublicClient, contractAddress : `0x${string}`) : Promise<string>{
         try{
-            if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
             const abi = this.ERC20abis.getTotalSupply
-            const supply = await this.publicClient.readContract({
+            const supply = await publicClient.readContract({
                 address: contractAddress,
                 abi,
                 functionName: 'totalSupply',
@@ -127,18 +87,19 @@ export default class ERC20TokenService{
         }
     }
 
-    async revokeAllowance({contractAddress, spenderAddress} : {contractAddress : THexAddress, spenderAddress : THexAddress}){
+    async revokeAllowance({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}){
         return await this.setAllowance({
+            publicClient, walletClient,
             contractAddress, 
             spenderAddress, 
             amount: BigInt(0)
         })
     }
 
-    async readAllowance({contractAddress, ownerAddress, spenderAddress} : {contractAddress : THexAddress, ownerAddress : THexAddress, spenderAddress : THexAddress}) : Promise<ReadContractReturnType>{
+    async readAllowance({publicClient, contractAddress, ownerAddress, spenderAddress} : {publicClient : PublicClient, contractAddress : THexAddress, ownerAddress : THexAddress, spenderAddress : THexAddress}) : Promise<ReadContractReturnType>{
         try {
-            if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
-            const allowance = await this.publicClient.readContract({
+            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            const allowance = await publicClient.readContract({
                 address: contractAddress,
                 abi : this.ERC20abis.getAllowance,
                 functionName: 'allowance',
@@ -151,28 +112,18 @@ export default class ERC20TokenService{
         }
     }
 
-    async setAllowance({contractAddress, spenderAddress, amount} : {contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<TransactionReceipt>{
+    async setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<TransactionReceipt>{
         try{
             console.log("set allowance")
             if(!window.ethereum) throw new Error('You must connect your wallet to initiate such a transaction.')
-            const [account] = await window.ethereum.request({ 
+            const [account] = await window.ethereum.request({ // !!! get through wallet instead
                 method: 'eth_requestAccounts' 
             })
-            this.walletClient = createWalletClient({
-                account, // : address,
-                chain: holesky,
-                transport : custom(window.ethereum)
-            })//.extend(publicActions) // can act as a public client
-
-            this.publicClient = createPublicClient({
-                chain: holesky,
-                transport : custom(window.ethereum) // http('http://127.0.0.1:8545/')// custom(window.ethereum)
-            }) 
             // const parsedAmount = parseUnits('20000', 18) // why parse?
             // !!! fix account
-            if (!this.walletClient || !this.publicClient) throw new Error('You must connect your wallet to initiate such a transaction.')
+            // if (!walletClient || !publicClient) throw new Error('You must connect your wallet to initiate such a transaction.')
         
-            if (!this.walletClient.account) throw new Error('No account connected. Please connect an account to your wallet.') // !!! deal with this error, modal
+            if (!walletClient.account) throw new Error('No account selected. Please select one of your wallet accounts.') // !!! deal with this error, modal
 
             /*const hash = await this.walletClient.writeContract({
                 address: contractAddress,
@@ -201,7 +152,7 @@ export default class ERC20TokenService{
 
             const hash = await this.walletClient.sendRawTransaction({ serializedTransaction })*/
 
-            const hash = await this.walletClient.sendTransaction({
+            const hash = await walletClient.sendTransaction({
                 account,
                 to: contractAddress,
                 data: encodeFunctionData({
@@ -213,7 +164,7 @@ export default class ERC20TokenService{
             })
 
             // This hash merely indicates that the transaction was submitted, not that it was successful in executing the intended function
-            const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
+            const receipt = await publicClient.waitForTransactionReceipt({ hash })
         
             return receipt
         }catch(error){
@@ -222,34 +173,22 @@ export default class ERC20TokenService{
         }
     }
 
-    async setAllowanceToUnlimited({contractAddress, spenderAddress} : {contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<TransactionReceipt>{
-        return this.setAllowance({contractAddress, spenderAddress, amount : this.maxUint256})
+    async setAllowanceToUnlimited({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<TransactionReceipt>{
+        return this.setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount : this.maxUint256})
     }
 
     // !!! use viem getbalance instead ?
-    async getBalance(tokenAddress : THexAddress, walletAddress : THexAddress) : Promise<bigint>{
+    async getBalance(publicClient : PublicClient, tokenAddress : THexAddress, walletAddress : THexAddress) : Promise<bigint>{
         console.log('start get balance')
-        this.publicClient = createPublicClient({
-            chain: holesky,
-            transport : custom(window.ethereum)
-        })  // !!!
-        console.log('public client created')
         try{
-            if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
-
-            /*const balancePromise = this.publicClient.readContract({
-                address: tokenAddress,
-                abi: this.ERC20abis.getBalance,
-                functionName: 'balanceOf',
-                args: [walletAddress]
-            })
-
+            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            /*
             const balance = await Promise.race([
                 balancePromise,
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Network timeout')), 5000))
             ])*/ // might be needed if network down
 
-            const balance = await this.publicClient.readContract({
+            const balance = await publicClient.readContract({
                 address: tokenAddress,
                 abi: this.ERC20abis.getBalance,
                 functionName: 'balanceOf',
@@ -266,14 +205,14 @@ export default class ERC20TokenService{
 
     // !!! test with only 5 working contracts
     // how to deal with errors? when only one promise fails?
-    async getAllBalances(tokenAddresses : THexAddress[], walletAddress : THexAddress): Promise<Record<THexAddress, bigint>> {
+    async getAllBalances(publicClient : PublicClient, tokenAddresses : THexAddress[], walletAddress : THexAddress): Promise<Record<THexAddress, bigint>> {
         const balances: Record<THexAddress, bigint> = {}      
         const errors: Error[] = [];
 
         await Promise.all(
             tokenAddresses.map(async (tokenAddress) => {
                 try {
-                    const balance = await this.getBalance(tokenAddress, walletAddress)
+                    const balance = await this.getBalance(publicClient, tokenAddress, walletAddress)
                     if (balance !== undefined) {
                         balances[tokenAddress] = balance
                     }
@@ -294,8 +233,7 @@ export default class ERC20TokenService{
         return this.deployedTokens.map(token => token.symbol)
     }
 
-    sendMoney(){
-        const account = privateKeyToAccount("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+    /*sendMoney(){ // !!! clean key
 
         const walletClient = createWalletClient({
             account, // : address,
@@ -307,7 +245,7 @@ export default class ERC20TokenService{
             to: "0xbc389292158700728d014d5b2b6237bfd36fa09c",
             value: parseEther("0.0001"),
         });
-    }
+    }*/
 
     /* Multicall not supported by the Hardhat devnet
     async getTokenNSymbol(tokenAddress : THexAddress) : Promise<{name : string, symbol : string} | undefined>{
