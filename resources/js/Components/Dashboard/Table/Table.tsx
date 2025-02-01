@@ -9,12 +9,15 @@ import { Errors } from '@inertiajs/core/types/types'
 import NumberUtils from '@/utils/NumberUtils'
 import { ReactNode } from 'react'
 import DateUtils from '@/utils/DateUtils'
+import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
 
 export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
     const { erc20TokenService } = useServices()
 
     const {handleSetAllowanceErrors} = useErrorHandler(modal.showError)
+
+    const { publicClient, walletClient } = useEtherClientsContext()
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
         await ClipboardUtils.copy(text)
@@ -23,7 +26,10 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
         try{
-            const receipt =  await erc20TokenService.revokeAllowance({contractAddress, spenderAddress})
+            if(!publicClient || !walletClient) throw new Error("You must connect your wallet to initiate such a transaction.")
+            // !!! initiate connection
+            modal.setStatus({visibility: true, contentId: 'sending'})
+            const receipt =  await erc20TokenService.revokeAllowance({publicClient, walletClient, contractAddress, spenderAddress})
             console.log("revoke")
 
             if(receipt?.status != 'success') {
@@ -37,12 +43,14 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                 preserveScroll: true,
                 preserveUrl:true,
                 onSuccess : () => { 
-                    console.log('Revocation successful') 
+                    console.log('Revocation successful')
+                    // modal.setStatus({visibility: true, contentId: 'confirmRevocation'})
                 }, // !!!
                 onError: (e : Errors) => {
                     if(e?.error) modal.showError(e.error)
                 }, 
             })
+            modal.close()
         }catch(e){
             handleSetAllowanceErrors(e)
         }

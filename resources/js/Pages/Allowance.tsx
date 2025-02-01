@@ -13,6 +13,7 @@ import type { Errors, PageProps } from "@inertiajs/core";
 import SpenderPanel from "@/Components/LateralPanels/SpenderPanel";
 import useModalManager from "@/hooks/useModalManager";
 import useErrorHandler from "@/hooks/useErrorHandler";
+import { useEtherClientsContext } from "@/hooks/useEtherClientsContext";
 
 export default function Allowance() {
 
@@ -23,6 +24,7 @@ export default function Allowance() {
     const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
     // centralizing viem errors management
     const {handleBalanceValidationErrors, handleSetAllowanceErrors} = useErrorHandler(modal.showError)
+    const { publicClient, walletClient } = useEtherClientsContext()
 
     const mode = useRef<string>(existingAllowance ? 'edit' : 'new')
 
@@ -59,11 +61,13 @@ export default function Allowance() {
     }
 
     async function processAllowance(){
+        modal.setStatus({visibility: true, contentId: 'sending'})
         // !!! backend side : should check if trio not already existing
         try{
+            if(!publicClient || !walletClient) throw new Error("You must connect your wallet to initiate such a transaction.")
             const receipt = !data.isUnlimited ?
-                await erc20TokenService.setAllowance({contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
-                    await erc20TokenService.setAllowanceToUnlimited({contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
+                await erc20TokenService.setAllowance({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
+                    await erc20TokenService.setAllowanceToUnlimited({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
 
             if(receipt?.status != 'success') {
                 modal.showError("Transaction receipt : The transaction has failed.")
@@ -110,7 +114,8 @@ export default function Allowance() {
 
         // !!!! check contract supply / check invalid contract
         try{
-            const balance = await erc20TokenService.getBalance(data.ERC20TokenAddress as THexAddress, data.ownerAddress as THexAddress) // !!! owner address should be wallet address?
+            if(!publicClient) throw new Error("You must connect your wallet to initiate such a transaction.")
+            const balance = await erc20TokenService.getBalance(publicClient, data.ERC20TokenAddress as THexAddress, data.ownerAddress as THexAddress) // !!! owner address should be wallet address?
             if(!balance || BigInt(data.amount) > balance) { // !!! fix bigint
                 setError('amount', `This amount exceeds your balance (${balance ?? 'unknown'}).`)
                 return false
