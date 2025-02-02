@@ -1,12 +1,10 @@
 import Header from "@/Components/Header/Header";
-import ConfirmRevocation from "@/Components/Modale/ConfirmRevocation";
 import ErrorAlert from "@/Components/Modale/ErrorAlert";
 import InjectedComponent from "@/Components/Modale/InjectedComponent";
 import Modal from "@/Components/Modale/Modal";
 import SendingTransaction from "@/Components/Modale/SendingTransaction";
 import Snackbar from "@/Components/Snackbar/Snackbar";
 import { Head } from "@inertiajs/react";
-import { useSDK } from "@metamask/sdk-react";
 import React, { ReactNode } from "react";
 import { PropsWithChildren } from "react";
 
@@ -20,7 +18,7 @@ export default function DashboardLayout({
         <div className='bg-dash-grey w-full h-full min-h-full flex flex-col font-jost'>
             <Snackbar message={snackbarMessage ? snackbarMessage : undefined}/>
             <Head title="Dashboard" />
-            <Header/>
+            <Header modal={modal}/>
             <main className="flex flex-row justify-between gap-x-[30px]">
                 {children}
             </main>
@@ -28,7 +26,6 @@ export default function DashboardLayout({
                 <Modal modalVisibility={modal.visibility} setModalStatus={modal.setStatus} width="560px">
                     {{
                         'error' : <ErrorAlert errorMessage={modal.errorMessageRef.current} closeModal={modal.close}/>,
-                        'confirmRevocation' : <ConfirmRevocation/>,
                         'sending' : <SendingTransaction/>,
                         'injectedComponent' : <InjectedComponent child={modal.injectedComponentRef.current}/>
                     } [modal.contentId]}

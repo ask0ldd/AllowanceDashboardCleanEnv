@@ -14,6 +14,7 @@ import SpenderPanel from "@/Components/LateralPanels/SpenderPanel";
 import useModalManager from "@/hooks/useModalManager";
 import useErrorHandler from "@/hooks/useErrorHandler";
 import { useEtherClientsContext } from "@/hooks/useEtherClientsContext";
+import { EthereumClientNotFoundError } from "@/errors/EthereumClientNotFoundError";
 
 export default function Allowance() {
 
@@ -32,13 +33,17 @@ export default function Allowance() {
 
     const { data, setData, post, put, processing, errors, setError, clearErrors, transform } = useForm<IFormAllowance & {[key: string]: string | boolean}>({
         ERC20TokenAddress: existingAllowance?.tokenContractAddress ?? '',
-        ownerAddress: existingAllowance?.ownerAddress ?? localStorageService.retrieveWalletAddress() ?? '', // !!! should be wallet address from erc20?
+        ownerAddress: existingAllowance?.ownerAddress ?? walletClient?.account?.address/*localStorageService.retrieveWalletAddress()*/ ?? '',
         spenderAddress: existingAllowance?.spenderAddress ?? '',
         spenderName : existingAllowance?.spenderName ?? '',
         amount : `${existingAllowance?.amount ?? 0n}`,
         isUnlimited : existingAllowance?.isUnlimited ?? false,
         transactionHash : '',
     })
+
+    useEffect(() => {
+        if(walletClient?.account?.address && isHexAddress(walletClient?.account?.address)) setData(form  => ({...form, ['ownerAddress'] : walletClient?.account?.address as THexAddress}))
+    }, [walletClient?.account?.address])
 
     useEffect(() => {
         if(flash?.error) modal.showError(flash.error)
@@ -51,20 +56,16 @@ export default function Allowance() {
     // !!! should not be able to send an allowance if not connected
     async function handleSubmitAllowanceForm(e : React.MouseEvent<HTMLButtonElement>) : Promise<void> {
         e.preventDefault()
-        console.log("prevent")
         clearErrors()
-        console.log("clear")
         if(!await isAllowanceFormValid()) return // no error modal shown before returning since all non thrown errors are displayed within the form itself
-        console.log("form validity")
         await processAllowance()
-        console.log("process") 
     }
 
     async function processAllowance(){
         modal.setStatus({visibility: true, contentId: 'sending'})
         // !!! backend side : should check if trio not already existing
         try{
-            if(!publicClient || !walletClient) throw new Error("You must connect your wallet to initiate such a transaction.")
+            if(!publicClient || !walletClient) throw new EthereumClientNotFoundError()
             const receipt = !data.isUnlimited ?
                 await erc20TokenService.setAllowance({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
                     await erc20TokenService.setAllowanceToUnlimited({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
@@ -73,7 +74,7 @@ export default function Allowance() {
                 modal.showError("Transaction receipt : The transaction has failed.")
                 return
             } else {
-                console.log("Transaction successful.")
+                console.log("The transaction has been received by the network.")
             }
 
             // transform : wait for the update to be resolved when setData is async
@@ -105,26 +106,24 @@ export default function Allowance() {
     }
 
     async function isAllowanceFormValid(){
-        // can't check if address exists through viem since balances may be 0 so only check contract address supply
+        // !!!! can't check if address exists through viem since balances may be 0 so only check contract address supply
         const errors = validateHexAddresses()
-        console.log('hexaddress validate')
+
+        // !!! should check if owner and spender != token address
         if (!data.isUnlimited && !validateAmount()) return false
         if(errors > 0) return false
-        console.log('amount validate')
 
         // !!!! check contract supply / check invalid contract
         try{
-            if(!publicClient) throw new Error("You must connect your wallet to initiate such a transaction.")
-            const balance = await erc20TokenService.getBalance(publicClient, data.ERC20TokenAddress as THexAddress, data.ownerAddress as THexAddress) // !!! owner address should be wallet address?
+            if(!publicClient || !walletClient?.account?.address) throw new EthereumClientNotFoundError()
+            const balance = await erc20TokenService.getBalance(publicClient, data.ERC20TokenAddress as THexAddress, walletClient?.account?.address/*data.ownerAddress as THexAddress*/) // !!!
             if(!balance || BigInt(data.amount) > balance) { // !!! fix bigint
                 setError('amount', `This amount exceeds your balance (${balance ?? 'unknown'}).`)
                 return false
             }
-            console.log('balance validate')
             return true
         }catch(e){
             handleBalanceValidationErrors(e)
-            console.log("balance error")
             return false
         }
     }
