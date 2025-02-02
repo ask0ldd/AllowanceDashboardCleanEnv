@@ -3,12 +3,14 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from "@inertiajs/core";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useModalManager from '@/hooks/useModalManager';
 import { router } from '@inertiajs/react'
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
 import { useSDK } from '@metamask/sdk-react';
 import checked from '@/assets/checked.png'
+import searchIcon from '@/assets/icons/searchIcon.svg'
+import debounce from 'lodash/debounce';
 
 export default function Dashboard() {
 
@@ -28,10 +30,11 @@ export default function Dashboard() {
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
         const newShowRevoked = !showRevoked
         setShowRevoked(prevShowRevoked => !prevShowRevoked)
+        // !!! should pass the wallet address too to filter
         router.get(route('dashboard'), {
             showRevoked: newShowRevoked,
-            search: searchValue,
-            showUnlimitedOnly: showOnlyUnlimited
+            searchValue,
+            showUnlimitedOnly
         }, {
             preserveState: true,
             replace: true,
@@ -41,13 +44,14 @@ export default function Dashboard() {
         });
     }
 
-    const [showOnlyUnlimited, setOnlyUnlimited] = useState(false)
+    const [showUnlimitedOnly, setOnlyUnlimited] = useState(false)
     function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){ // !!!
-        const newUnlimited = !showOnlyUnlimited
+        const newUnlimited = !showUnlimitedOnly
         setOnlyUnlimited(prev => !prev)
+        // !!! should pass the wallet address too to filter
         router.get(route('dashboard'), { 
             showRevoked, 
-            search: searchValue, 
+            searchValue, 
             showUnlimitedOnly : newUnlimited
         }, {
             preserveState: true,
@@ -59,33 +63,69 @@ export default function Dashboard() {
     }
 
     const [searchValue, setSearchValue] = useState("")
-    function handleSearchInput(e : React.KeyboardEvent<HTMLInputElement>){
-        setSearchValue(e.currentTarget.value)
-        router.get(route('dashboard'), { showRevoked, search: e.currentTarget.value }, {
-            preserveState: true,
-            replace: true,
-            preserveScroll: true,
-            preserveUrl : true,
-            only: ['allowances'],
-        });
-    } // !!! debounce?*/
+    const debouncedSearch = useMemo(
+        () => debounce((value: string) => {
+
+            router.get(route('dashboard'), 
+                { showRevoked, searchValue: value, showUnlimitedOnly}, 
+                {
+                    preserveState: true,
+                    replace: true,
+                    preserveScroll: true,
+                    preserveUrl: true,
+                    only: ['allowances'],
+                }
+            );
+        }, 300),
+        [showRevoked, router, showUnlimitedOnly]
+    )
+    
+    useEffect(() => {
+        debouncedSearch(searchValue);
+        return () => debouncedSearch.cancel();
+    }, [searchValue, debouncedSearch]);
+    
+    function handleSearchInput(e: React.ChangeEvent<HTMLInputElement>) {
+        const value = e.target.value
+        setSearchValue(value)
+    }
+
+    function handleEmptySearchTermClick(){
+        setSearchValue("")
+    }
+    
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    function handleFocusInput(){
+        if(inputRef) inputRef.current?.focus()
+    }
+
+    useEffect(() => {
+        if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
+    }, [allowances])
 
     return(
         <DashboardLayout snackbarMessage={snackbarMessage ?? ""} modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
-                    <input placeholder='Search' className='px-[18px] w-[240px] h-[42px] mt-auto rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]' type="search" onInput={handleSearchInput} value={searchValue} />
+                    <div onClick={handleFocusInput} className='cursor-text flex pl-[16px] pr-[16px] w-[240px] h-[40px] mt-auto items-center justify-between rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]'>
+                        <input spellCheck="false" ref={inputRef} disabled={!allowances || !connected} placeholder='Search' className='border-none outline-none bg-none h-[40px]' type="text" onInput={handleSearchInput} value={searchValue} />
+                        {searchValue == "" ? 
+                            <img onClick={handleFocusInput} className='cursor-text' src={searchIcon}/> : 
+                            <svg onClick={handleEmptySearchTermClick} className='cursor-pointer translate-y-[1px]' width="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                                <path fill="#303030" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
+                            </svg>}
+                    </div>
                     <div className='flex  gap-x-[10px]'>
-                        <div onClick={handleDisplayUnlimitedOnly} className='cursor-pointer flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
-                            <label id='unlimitedLabel' className='cursor-pointer flex items-center text-[14px]'>Unlimited only</label>
-                            <div role="checkbox" aria-checked={showOnlyUnlimited} className={'cursor-pointer border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showOnlyUnlimited ? ' bg-[#E8EBED]' : ' bg-[#48494c]')}>
-                                {showOnlyUnlimited && <img src={checked}/>}
+                        <div onClick={allowances && connected ? handleDisplayUnlimitedOnly : undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
+                            <label id='unlimitedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Unlimited only</label>
+                            <div role="checkbox" aria-checked={showUnlimitedOnly} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showUnlimitedOnly ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
+                                {showUnlimitedOnly && <img src={checked}/>}
                             </div>
                         </div>
-                        <div onClick={handleDisplayRevoked} className='cursor-pointer flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]'>
-                            <label id='revokedLabel' className='cursor-pointer flex items-center text-[14px]'>Revoked allowances</label>
-                            <div role="checkbox" aria-checked={showRevoked} className={'cursor-pointer border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#E8EBED]' : ' bg-[#48494c]')}>
+                        <div onClick={allowances && connected ? handleDisplayRevoked :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
+                            <label id='revokedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Revoked allowances</label>
+                            <div role="checkbox" aria-checked={showRevoked} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
                                 {showRevoked && <img src={checked}/>}
                             </div>
                         </div>

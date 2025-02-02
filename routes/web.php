@@ -29,4 +29,4 @@ Route::post('/set-account', [AccountController::class, 'setSessionAccount']);
 
 Route::fallback(function () {
     return Inertia::render('Page404');
-});
+})->name('page404');

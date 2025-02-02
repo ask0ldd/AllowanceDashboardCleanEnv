@@ -179,9 +179,7 @@ export default class ERC20TokenService{
 
     // !!! use viem getbalance instead ?
     async getBalance(publicClient : PublicClient, tokenAddress : THexAddress, walletAddress : THexAddress) : Promise<bigint>{
-        console.log('start get balance')
         try{
-            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
             /*
             const balance = await Promise.race([
                 balancePromise,
