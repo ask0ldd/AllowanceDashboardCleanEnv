@@ -61,6 +61,21 @@ class AllowanceService
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
             ->take(10)
+            ->where(function ($query) use ($searchTerm) {
+                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
+                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
+                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                        })
+                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                })
+                    ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    })
+                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    });
+            })
             ->where(function ($query) {
                 $query->where('amount', '>', 0)
                     ->orWhere('is_unlimited', true);
@@ -86,7 +101,7 @@ class AllowanceService
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
             ->take(10)
-            /*->whereHas('tokenContract', function ($q) use ($searchTerm) {
+            ->whereHas('tokenContract', function ($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
                     ->orWhereHas('address', function ($subq) use ($searchTerm) {
                         $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
@@ -98,7 +113,7 @@ class AllowanceService
             })
             ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
                 $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-            })*/
+            })
             ->get(); // !! should use paginate
     }
 }
