@@ -10,6 +10,13 @@ class TokenContract extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'token_contracts';
+
     protected $fillable = [
         'token_address_id',
         'name',
@@ -27,5 +34,3 @@ class TokenContract extends Model
         return $this->belongsTo(Address::class, 'token_address_id');
     }
 }
-
-?>

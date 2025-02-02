@@ -26,5 +26,17 @@ class AddressService
             $allowance->spender_address_id !== $spenderAddress->id
         ) return false;
         return true;
+        // Case-insensitive queries
+        /*$ownerAddress = Address::whereRaw('LOWER(address) = ?', [strtolower($validated['ownerAddress'])])->firstOrFail();
+        $tokenAddress = Address::whereRaw('LOWER(address) = ?', [strtolower($validated['ERC20TokenAddress'])])->firstOrFail();
+        $spenderAddress = Address::whereRaw('LOWER(address) = ?', [strtolower($validated['spenderAddress'])])->firstOrFail();
+
+        if (
+            $allowance->token_contract_id !== $tokenAddress->id ||
+            $allowance->owner_address_id !== $ownerAddress->id ||
+            $allowance->spender_address_id !== $spenderAddress->id
+        ) return false;
+
+        return true;*/
     }
 }
