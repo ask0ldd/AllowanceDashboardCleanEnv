@@ -10,6 +10,7 @@ import NumberUtils from '@/utils/NumberUtils'
 import { ReactNode } from 'react'
 import DateUtils from '@/utils/DateUtils'
 import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
+import { EthereumClientNotFoundError } from '@/errors/EthereumClientNotFoundError'
 
 export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
@@ -26,7 +27,7 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
         try{
-            if(!publicClient || !walletClient) throw new Error("You must connect your wallet to initiate such a transaction.")
+            if(!publicClient || !walletClient) throw new EthereumClientNotFoundError()
             // !!! initiate connection
             modal.setStatus({visibility: true, contentId: 'sending'})
             const receipt =  await erc20TokenService.revokeAllowance({publicClient, walletClient, contractAddress, spenderAddress})
@@ -37,15 +38,13 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                 return
             }
             // !!! show modale success transaction
-            // setModalStatus({visibility : true, contentId : 'confirmRevocation'})
             router.put(`/allowance/revoke/${allowanceId}`, {_method: 'put',}, { // put throws this error : The PUT method is not supported for route dashboard. Supported methods: GET, HEAD.
                 preserveState: true,
                 preserveScroll: true,
                 preserveUrl:true,
                 onSuccess : () => { 
                     console.log('Revocation successful')
-                    // modal.setStatus({visibility: true, contentId: 'confirmRevocation'})
-                }, // !!!
+                },
                 onError: (e : Errors) => {
                     if(e?.error) modal.showError(e.error)
                 }, 
@@ -58,13 +57,10 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
     function handleEditButtonClick(allowanceId : number){
         router.visit('allowance/edit/' + allowanceId)
-        /*console.log("error")
-        modal.showError("You must connect your wallet to access your allowances.")*/
     }
 
     // get allowances from DB
     // check if these allowances exists on the chain
-
     return(
         <>
         <table className="text-left text-[14px] mt-[15px]">
