@@ -29,7 +29,7 @@ class AllowanceService
         return Allowance::create($data);
     }
 
-    public function getAllowance($id): ?Allowance
+    public function getAllowance(int $id): ?Allowance
     {
         try {
             return Allowance::findOrFail($id);
@@ -80,19 +80,6 @@ class AllowanceService
                 $query->where('amount', '>', 0)
                     ->orWhere('is_unlimited', true);
             })
-            /*->whereHas('tokenContract', function ($q) use ($searchTerm) {
-                $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
-                    ->orWhereHas('address', function ($subq) use ($searchTerm) {
-                        $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                    })
-                    ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
-            })
-            ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
-                $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-            })
-            ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
-                $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-            })*/
             ->get(); // !! should use paginate
     }
 

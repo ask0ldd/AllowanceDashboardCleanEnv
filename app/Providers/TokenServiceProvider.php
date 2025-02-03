@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\TokenService;
 use Illuminate\Support\ServiceProvider;
 
 class TokenServiceProvider extends ServiceProvider
@@ -11,7 +12,9 @@ class TokenServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(TokenService::class, function ($app) {
+            return new TokenService();
+        });
     }
 
     /**
