@@ -99,12 +99,12 @@ export default function Dashboard() {
         if(inputRef) inputRef.current?.focus()
     }
 
-    useEffect(() => {
+    /*useEffect(() => {
         if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
-    }, [allowances])
+    }, [allowances])*/ // !!!!
 
     return(
-        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} modal={modal}>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage} modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>

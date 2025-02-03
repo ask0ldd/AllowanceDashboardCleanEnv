@@ -24,7 +24,7 @@ export default function Allowance() {
 
     const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
     // centralizing viem errors management
-    const {handleBalanceValidationErrors, handleSetAllowanceErrors} = useErrorHandler(modal.showError)
+    const { handleSetAllowanceErrors } = useErrorHandler(modal.showError)
     const { publicClient, walletClient } = useEtherClientsContext()
 
     const mode = useRef<string>(existingAllowance ? 'edit' : 'new')
@@ -66,27 +66,29 @@ export default function Allowance() {
         // !!! backend side : should check if trio not already existing
         try{
             if(!publicClient || !walletClient) throw new EthereumClientNotFoundError()
-            const receipt = !data.isUnlimited ?
+            const /*receipt*/ hash = !data.isUnlimited ?
                 await erc20TokenService.setAllowance({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
                     await erc20TokenService.setAllowanceToUnlimited({publicClient, walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
 
-            if(receipt?.status != 'success') {
+            /*if(receipt?.status != 'success') {
                 modal.showError("Transaction receipt : The transaction has failed.")
                 return
             } else {
                 console.log("The transaction has been received by the network.")
-            }
+            }*/
 
             // transform : wait for the update to be resolved when setData is async
             transform((data) => ({
                 ...data,
-                transactionHash: receipt.transactionHash,
+                transactionHash: hash, // receipt.transactionHash,
             }))
 
             if(mode.current == 'new'){
                 post('/allowance', {
                     preserveScroll: true,
-                    onSuccess: () => {}, // !!! show success modale ?
+                    onSuccess: () => {
+                        setSnackbarMessage(Date.now() + "::Transaction sent. Hash : " +hash)
+                    }, // !!! show success transaction send snackbar ?
                     onError: (e : Errors) => {
                         if(e?.error) modal.showError(e.error)
                 }, 
@@ -94,7 +96,9 @@ export default function Allowance() {
             }else{
                 put('/allowance/' + route().params.id, {
                     preserveScroll: true,
-                    onSuccess: () => {}, // !!! show success modale ?
+                    onSuccess: () => {
+                        setSnackbarMessage(Date.now() + "::Transaction sent. Hash : " +hash)
+                    }, // !!! show success transaction send snackbar ?
                     onError: (e : Errors) => {
                         if(e?.error) modal.showError(e.error)
                     }, 
@@ -107,25 +111,24 @@ export default function Allowance() {
 
     async function isAllowanceFormValid(){
         // !!!! can't check if address exists through viem since balances may be 0 so only check contract address supply
-        const errors = validateHexAddresses()
+        // !!!! check contract supply / check invalid contract
+        let errors = validateHexAddresses()
 
-        // !!! should check if owner and spender != token address
-        if (!data.isUnlimited && !validateAmount()) return false
+        // amount must be number when unlimited is off
+        if (!data.isUnlimited && !validateAmount()) errors++
+
+        if(data.ERC20TokenAddress == data.spenderAddress) {
+            setError("spenderAddress", "Spender and Token addresses must be distinct.")
+            errors++
+        }
+        if(data.ERC20TokenAddress == data.ownerAddress) {
+            setError("ownerAddress", "Owner and Token addresses must be distinct.")
+            errors++
+        }
+
         if(errors > 0) return false
 
-        // !!!! check contract supply / check invalid contract
-        try{
-            if(!publicClient || !walletClient?.account?.address) throw new EthereumClientNotFoundError()
-            const balance = await erc20TokenService.getBalance(publicClient, data.ERC20TokenAddress as THexAddress, walletClient?.account?.address/*data.ownerAddress as THexAddress*/) // !!!
-            if(!balance || BigInt(data.amount) > balance) { // !!! fix bigint
-                setError('amount', `This amount exceeds your balance (${balance ?? 'unknown'}).`)
-                return false
-            }
-            return true
-        }catch(e){
-            handleBalanceValidationErrors(e)
-            return false
-        }
+       return true
     }
 
     function validateHexAddresses() {
@@ -192,7 +195,7 @@ export default function Allowance() {
     // !!! modal contract doesn't not exist
 
     return(
-        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} modal={modal}>
+        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage} modal={modal}>
             <TokenPanel accountAddress={localStorageService.retrieveWalletAddress() ? localStorageService.retrieveWalletAddress() : undefined} ownedTokens={ownedTokens} setSnackbarMessage={setSnackbarMessage}/>
             <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[30px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[580px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>{!existingAllowance ? 'SET A NEW' : 'EDIT AN'} ALLOWANCE</h1>
@@ -206,23 +209,26 @@ export default function Allowance() {
                     </div>
                     
                     <div className="flex flex-row justify-between gap-x-[15px]"><label id="ownerAddressLabel" className={labelClasses}>Owner Address</label><span className="text-[#D86055] mt-auto">{errors['ownerAddress']}</span></div>
-                    <input aria-labelledby="ownerAddressLabel" id="ownerInput" placeholder="0x20c...a20cb" type="text" value={data.ownerAddress} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
+                    <input readOnly={mode.current == "edit"} aria-labelledby="ownerAddressLabel" id="ownerInput" placeholder="0x20c...a20cb" type="text" value={data.ownerAddress} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <div className="flex flex-row justify-between"><label id="spenderAddressLabel" className={labelClasses}>Spender Address</label><span className="text-[#D86055] mt-auto">{errors['spenderAddress']}</span></div>
-                    <input aria-labelledby="spenderAddressLabel" id="spenderInput" placeholder="0x20c...a20cb" type="text" value={data.spenderAddress} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
+                    <input readOnly={mode.current == "edit"} aria-labelledby="spenderAddressLabel" id="spenderInput" placeholder="0x20c...a20cb" type="text" value={data.spenderAddress} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <label id="spenderNameLabel" className={labelClasses}>Spender Name (optional)</label>
                     <input id="spenderNameInput" aria-labelledby="spenderNameLabel" placeholder="Ex : PancakeSwap, Axie Infinity, Magic Eden, ..." type="text" value={data.spenderName} className={textinputClasses} onInput={(e) => handleSetInput(e)}/>
                     
                     <div className="flex flex-row justify-between gap-x-[15px]"><div className="flex flex-row justify-between w-full"><label id="amountLabel" className={labelClasses}>Amount</label><span className="text-[#D86055] mt-auto">{errors['amount']}</span></div><label id="unlimitedLabel" className={labelClasses + 'flex flex-shrink-0 w-[80px] text-center'}>Unlimited</label></div>
                     <div className="flex flex-row mt-[6px] gap-x-[15px]">
-                        <input aria-labelledby="amountLabel" disabled={data.isUnlimited} readOnly={data.isUnlimited} id="amountInput" inputMode={data.isUnlimited ? "text" : "numeric"} pattern={data.isUnlimited ? ".*" : "[0-9]*"} type="text" style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (data.isUnlimited ? ' disabled:bg-[#EDEFF0] disabled:outline-[#D0D4D8] disabled:text-[#303030]' : '')} value={data.isUnlimited ? "Unlimited" : data.amount} onInput={(e) => handleSetInput(e)}/>
+                        <input aria-labelledby="amountLabel" disabled={data.isUnlimited} readOnly={data.isUnlimited} id="amountInput" inputMode={data.isUnlimited ? "text" : "numeric"} step={data.isUnlimited ? undefined : "0.000000000000001"} pattern={data.isUnlimited ? ".*" : "[0-9]*"} type="text" style={{marginTop:0}} min={0} className={textinputClasses + ' w-full' + (data.isUnlimited ? ' disabled:bg-[#EDEFF0] disabled:outline-[#D0D4D8] disabled:text-[#303030]' : '')} value={data.isUnlimited ? "Unlimited" : data.amount} onInput={(e) => handleSetInput(e)}/>
                         <div aria-labelledby="unlimitedLabel" role="button" onClick={() => setData('isUnlimited', !data.isUnlimited)} className="cursor-pointer flex flex-row flex-shrink-0 items-center bg-[#EDEFF0] p-1 w-[80px] h-[44px] rounded-full shadow-[inset_0_1px_3px_#BBC7D3,0_2px_0_#ffffff]">
                             <div className={`w-[36px] h-[36px] rounded-full transition-all ease-in duration-150 shadow-[0_2px_4px_-2px_#555566] ${data.isUnlimited ? 'ml-[36px] bg-orange-gradient' : 'ml-0 bg-[#FFFFFF] shadow-slate-400'}`}></div>
                         </div>
                     </div>
 
-                    <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-orange-gradient rounded-[4px] text-offwhite shadow-[0_4px_8px_#F7644140]">Set Allowance</button>
+                    <div className="flex gap-x-[15px]">
+                        {/*<button className="flex font-semibold bg-gradient-to-r from-[#303030] to-[#4C5054] text-offwhite w-[140px] h-[44px] mt-auto justify-center items-center rounded-[4px]">Revoke</button>*/}
+                        <button onClick={handleSubmitAllowanceForm} className="mt-[35px] font-semibold h-[44px] w-full bg-orange-gradient rounded-[4px] text-offwhite shadow-[0_4px_8px_#F7644140] hover:bg-orange-darker-gradient hover:hover:shadow-[0_2px_0px_#FFFFFF,inset_0_2px_4px_rgba(0,0,0,0.25)]">Set Allowance</button>
+                    </div>
                 </form>
             </div>
             <SpenderPanel setSnackbarMessage={setSnackbarMessage}/>
@@ -250,107 +256,3 @@ interface IFormAllowance{
     amount : string
     isUnlimited : boolean
 }
-
-/*async function read(){
-        try{
-            const metamaskAddress = await metamaskService.getWalletAddress()
-            if(metamaskAddress) {
-                setWalletAddress(metamaskAddress)
-                console.log("metamask address : ", metamaskAddress)
-            }
-
-            const readSupply = await erc20TokenService.getTotalSupply("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-            if(readSupply) setSupply(readSupply)
-            
-            const receipt = await erc20TokenService.setAllowance({
-                contractAddress : "0x5FbDB2315678afecb367f032d93F642f64180aa3", 
-                spenderAddress : "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199", 
-                amount: BigInt(20000)
-            })
-            if(receipt) console.log("Receipt : ", receipt)
-            
-            const allowance = await erc20TokenService.readAllowance({
-                contractAddress : "0x5FbDB2315678afecb367f032d93F642f64180aa3", 
-                ownerAddress : "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097", 
-                spenderAddress : "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
-            })
-            if(allowance) console.log("Allowance : ", allowance)
-
-            const tokenInfos = await erc20TokenService.getTokenNSymbol("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-            if(tokenInfos) console.log(JSON.stringify(tokenInfos))
-        }
-        catch(error){
-            setSupply("error")
-        }
-    }
-
-    useEffect(() => {
-        read()
-    }, [])*/
-
-    /*
-  import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
-
-function YourComponent() {
-  const [firstFieldValue, setFirstFieldValue] = useState('');
-  const { data, setData, get } = useForm({
-    searchTerm: '',
-    relatedData: null
-  });
-
-  const handleFirstFieldChange = (e) => {
-    const value = e.target.value;
-    setFirstFieldValue(value);
-
-    // Trigger real-time search/update
-    get(route('your.search.route'), {
-      data: { searchTerm: value },
-      preserveState: true,
-      only: ['relatedData'],
-      onSuccess: (page) => {
-        setData('relatedData', page.props.relatedData);
-      }
-    });
-  };
-
-  return (
-    <div>
-      <input 
-        type="text" 
-        value={firstFieldValue}
-        onChange={handleFirstFieldChange}
-      />
-      <input 
-        type="text" 
-        value={data.relatedData || ''} 
-        readOnly 
-      />
-    </div>
-  );
-}
-
-    */
-
-/*async function showConfirmationModale(){ // should pass edit or create
-        // !!! add unlimited alert for user if needed
-        modal.showInjectionModal(
-            <div className="flex flex-col w-full gap-y-[20px]">
-                <div className="flex flex-shrink-0 justify-center items-center self-center w-[52px] h-[52px] bg-[#d0fae7] rounded-full">
-                    <div className="flex flex-grow-0 justify-center items-center w-[36px] h-[36px] bg-[#40CBADBB] rounded-full">
-                    </div>
-                </div>
-                <h3 className="w-full text-center font-bold text-[24px]">Confirm this transaction</h3>
-                <p className="flex flex-col w-full text-[14px] italic p-[12px] pt-[24px] border-t border-[#303030] border-dashed">Accepting an Ethereum token allowance doesn't lock you in permanently. You can revoke permissions anytime through our platform.</p>
-                <p className="flex flex-col w-full text-[14px] italic p-[12px] pt-[24px] border-t border-[#303030] border-solid">Accepting an Ethereum token allowance doesn't lock you in permanently. You can revoke permissions anytime through our platform.</p>
-                <div className="flex flex-row gap-x-[10px]">
-                    <button className="font-semibold flex-auto h-[44px] bg-[#ffffff] w-full bg-gradient-to-r from-[#303030] to-[#4D5054] rounded-[4px] text-offwhite">
-                        Cancel
-                    </button>
-                    <button onClick={processConfirmedAllowance} className="font-semibold flex-auto h-[44px] w-full bg-gradient-to-r from-[#2A9F8C] to-[#4DB85A] rounded-[4px] text-offwhite shadow-[0_4px_8px_#4DB85A40]">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        )
-    }*/

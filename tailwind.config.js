@@ -30,6 +30,7 @@ export default {
             },
             backgroundImage: {
                 'orange-gradient': 'linear-gradient(90deg, #D86055 0%, #F86F4D 50%, #F8A053 100%)',
+                'orange-darker-gradient': 'linear-gradient(90deg, #C84C41 0%, #D9664A 50%, #DE8C45 100%)',
                 'desat-orange-gradient': 'linear-gradient(90deg, #C37169 0%, #D18774 50%, #CAA381 100%)',
             },
         },
