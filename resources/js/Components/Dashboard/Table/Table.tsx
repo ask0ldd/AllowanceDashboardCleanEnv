@@ -74,10 +74,10 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                 <tr key={"tableLine" + index}>
                     <td><img className='w-[32px] mx-auto' src={`/coins/${allowance.tokenContractSymbol}.svg`}/></td>
                     <td>{allowance.tokenContractName}</td>
-                    <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.tokenContractAddress)} title={allowance.tokenContractAddress}>{AddressUtils.maskAddress(allowance.tokenContractAddress)}</td>
+                    <td onClick={() => handleCopyToClipboard(allowance.tokenContractAddress)} title={allowance.tokenContractAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.tokenContractAddress)}</span></td>
                     <td>{allowance.tokenContractSymbol}</td>
-                    <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}>{AddressUtils.maskAddress(allowance.ownerAddress)}</td>
-                    <td className='cursor-copy hover:underline' onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}>{AddressUtils.maskAddress(allowance.spenderAddress)}</td>
+                    <td onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.ownerAddress)}</span></td>
+                    <td onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.spenderAddress)}</span></td>
                     <td>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "revoked" : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
                     <td>{DateUtils.toEUFormat(allowance.updatedAt)}{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">

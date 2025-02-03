@@ -9,7 +9,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
 import logoutIcon from '@/assets/icons/logout.svg'
 
-export default function InfoPanel({modal} : IProps){
+export default function InfoPanel({modal, setSnackbarMessage} : IProps){
     const { sdk, connected, provider } = useSDK()
     
     const { metamaskService, localStorageService } = useServices()
@@ -65,7 +65,7 @@ export default function InfoPanel({modal} : IProps){
 
     async function handleCopyToClipboard(text : string) : Promise<void> {
         await ClipboardUtils.copy(text)
-        // !!! setSnackbarMessage(Date.now() + "::Address copied to Clipboard.")
+        setSnackbarMessage(Date.now() + "::Address copied to Clipboard.")
     }
 
     async function handleConnectToMetaMaskClick() {
@@ -129,7 +129,8 @@ interface IProps{
             showInjectionModal : (injectedChild: ReactNode) => void
             errorMessageRef : React.RefObject<string>
             injectedComponentRef : React.RefObject<React.ReactNode>
-    }
+    },
+    setSnackbarMessage : React.Dispatch<React.SetStateAction<string | null>>
 }
 
     /*const requestMade = useRef(false)
