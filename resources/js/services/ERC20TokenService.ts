@@ -1,4 +1,5 @@
 import hhTokens from "@/constants/deployedTokens";
+import { WalletAccountNotFoundError } from "@/errors/WalletAccountNotFoundError";
 import { THexAddress } from "@/types/THexAddress";
 import { encodeFunctionData, parseAbi, PublicClient, ReadContractReturnType, TransactionReceipt, WalletClient } from "viem"
 import { holesky } from 'viem/chains'
@@ -65,7 +66,7 @@ export default class ERC20TokenService{
     
             return { name, symbol };
         } catch (error) {
-            console.error("Can't retrieve target token name & symbol: ", error)
+            console.error("Can't retrieve the target token name & symbol: ", error)
             throw error
         }
     }
@@ -107,53 +108,20 @@ export default class ERC20TokenService{
             })
             return allowance
         } catch (error) {
-            console.error('Error checking allowance :', error)
+            console.error("Can't reading the target allowance :", error)
             throw error
         }
     }
 
-    async setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<TransactionReceipt>{
+    async setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<`0x${string}` /*TransactionReceipt*/>{
         try{
-            console.log("set allowance")
-            if(!window.ethereum) throw new Error('You must connect your wallet to initiate such a transaction.')
-            const [account] = await window.ethereum.request({ // !!! get through wallet instead
-                method: 'eth_requestAccounts' 
-            })
             // const parsedAmount = parseUnits('20000', 18) // why parse?
-            // !!! fix account
             // if (!walletClient || !publicClient) throw new Error('You must connect your wallet to initiate such a transaction.')
         
-            if (!walletClient.account) throw new Error('No account selected. Please select one of your wallet accounts.') // !!! deal with this error, modal
-
-            /*const hash = await this.walletClient.writeContract({
-                address: contractAddress,
-                abi: this.ERC20abis.setAllowance,
-                functionName: 'approve',
-                args: [spenderAddress, amount],
-                chain : this.walletClient.chain,
-                account : this.walletClient.account
-            })*/
-            
-            /*const request = await this.walletClient.prepareTransactionRequest({
-                account,
-                to: contractAddress,
-                data: encodeFunctionData({
-                  abi : this.ERC20abis.setAllowance,
-                  functionName: 'approve',
-                  args: [spenderAddress, amount], // Use parsed amount
-                }),
-                maxFeePerGas: 58914879n,
-                maxPriorityFeePerGas: 58914879n,
-                // nonce: 22,
-                chain: hardhat //this.walletClient.chain
-            })
-            
-            const serializedTransaction = await this.walletClient.signTransaction(request)
-
-            const hash = await this.walletClient.sendRawTransaction({ serializedTransaction })*/
+            if (!walletClient.account) throw new WalletAccountNotFoundError()
 
             const hash = await walletClient.sendTransaction({
-                account,
+                account : walletClient.account,
                 to: contractAddress,
                 data: encodeFunctionData({
                     abi: this.ERC20abis.setAllowance,
@@ -164,16 +132,21 @@ export default class ERC20TokenService{
             })
 
             // This hash merely indicates that the transaction was submitted, not that it was successful in executing the intended function
-            const receipt = await publicClient.waitForTransactionReceipt({ hash })
+            // const receipt = await publicClient.waitForTransactionReceipt({ hash }) // after the backend job
         
-            return receipt
+            return hash // receipt
         }catch(error){
-            console.error("Failed to set allowance : ", error)
+            console.error("Can't set the requested allowance : ", error)
             throw error
         }
     }
 
-    async setAllowanceToUnlimited({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<TransactionReceipt>{
+    async getReceipt(publicClient : PublicClient, hash : `0x${string}`) : Promise<TransactionReceipt> {
+        // !!! should format receipt to json
+        return await publicClient.waitForTransactionReceipt({ hash })
+    }
+
+    async setAllowanceToUnlimited({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}` /*TransactionReceipt*/>{
         return this.setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount : this.maxUint256})
     }
 
@@ -193,10 +166,9 @@ export default class ERC20TokenService{
                 args: [walletAddress]
             })
         
-            // console.log("read contract")
-            return balance // !!! should be balance as bigint
+            return balance
         }catch(error){
-            console.error(`Failed to retrieve the balance for the contract ${tokenAddress} & the account ${walletAddress} :`, error)
+            console.error(`Can't retrieve the balance for the contract ${tokenAddress}, account ${walletAddress} pair :`, error)
             throw error
         }
     }
@@ -215,13 +187,13 @@ export default class ERC20TokenService{
                         balances[tokenAddress] = balance
                     }
                 } catch (error) {
-                    errors.push(new Error(`Failed to get balance for token ${tokenAddress}: ${error}`))
+                    errors.push(new Error(`Failed to get the balance for the token ${tokenAddress}: ${error}`))
                 }
             })
         )
 
         if (errors.length > 0) {
-            console.error('Errors occurred while fetching balances:', errors)
+            console.error('Errors occurred while fetching balances :', errors)
         }
         
         return balances
