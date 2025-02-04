@@ -38,26 +38,28 @@ class AllowanceService
         }
     }
 
-    public function getFistTenActiveAllowances(): \Illuminate\Database\Eloquent\Collection
+    public function getFistTenActiveAllowances(): \Illuminate\Pagination\LengthAwarePaginator // \Illuminate\Database\Eloquent\Collection
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            ->take(10)
+            //->take(10)
             ->where(function ($query) {
                 $query->where('amount', '>', 0)
                     ->orWhere('is_unlimited', true);
             })
-            ->get(); // !! should use paginate
+            // ->get();
+            ->paginate(10);
     }
 
     // !!! merge both
-    public function getFistTenAllowances(): \Illuminate\Database\Eloquent\Collection
+    public function getFistTenAllowances(): \Illuminate\Pagination\LengthAwarePaginator // \Illuminate\Database\Eloquent\Collection
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            ->take(10)
-            ->get(); // !! should use paginate
+            // ->take(10)
+            // ->get();
+            ->paginate(10);
     }
 
-    public function getFistTenActiveAllowancesWith(String $searchTerm): \Illuminate\Database\Eloquent\Collection
+    public function getFistTenActiveAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection //\Illuminate\Pagination\LengthAwarePaginator
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
             ->take(10)
@@ -80,11 +82,12 @@ class AllowanceService
                 $query->where('amount', '>', 0)
                     ->orWhere('is_unlimited', true);
             })
-            ->get(); // !! should use paginate
+            ->get();
+        // ->paginate(10);
     }
 
     // !!! merge both
-    public function getFistTenAllowancesWith(String $searchTerm): \Illuminate\Database\Eloquent\Collection
+    public function getFistTenAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection // \Illuminate\Pagination\LengthAwarePaginator
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
             ->take(10)
@@ -101,6 +104,7 @@ class AllowanceService
             ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
                 $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
             })
-            ->get(); // !! should use paginate
+            ->get();
+        // ->paginate(10);
     }
 }
