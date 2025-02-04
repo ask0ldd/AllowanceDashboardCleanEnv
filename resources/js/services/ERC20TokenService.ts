@@ -1,6 +1,11 @@
 import hhTokens from "@/constants/deployedTokens";
+import { InvalidAddressError } from "@/errors/InvalidAddressError";
+import { InvalidHashError } from "@/errors/InvalidHashError";
+import { PublicClientUnavailableError } from "@/errors/PublicClientUnavailableError";
 import { WalletAccountNotFoundError } from "@/errors/WalletAccountNotFoundError";
 import { THexAddress } from "@/types/THexAddress";
+import AddressUtils from "@/utils/AddressUtils";
+import VariousUtils from "@/utils/VariousUtils";
 import { encodeFunctionData, parseAbi, PublicClient, ReadContractReturnType, TransactionReceipt, WalletClient } from "viem"
 import { holesky } from 'viem/chains'
 
@@ -20,7 +25,8 @@ export default class ERC20TokenService{
 
     async getTokenName(publicClient : PublicClient, tokenAddress : THexAddress){
         try{
-            // if(publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            if(!publicClient) throw new PublicClientUnavailableError()
+            if(AddressUtils.isValidAddress(tokenAddress)) throw new InvalidAddressError()
             const tokenName = await publicClient.readContract({
             address: tokenAddress,
             abi: [{ 
@@ -42,7 +48,8 @@ export default class ERC20TokenService{
 
     async getTokenNSymbol(publicClient : PublicClient, tokenAddress: THexAddress): Promise<{ name: string, symbol: string }> {
         try {
-            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            if(!publicClient) throw new PublicClientUnavailableError()
+            if(AddressUtils.isValidAddress(tokenAddress)) throw new InvalidAddressError()
             const nameAbi = [{ name: 'name', type: 'function', outputs: [{ type: 'string' }] }]
             const symbolAbi = [{ name: 'symbol', type: 'function', outputs: [{ type: 'string' }] }]
     
@@ -73,7 +80,8 @@ export default class ERC20TokenService{
 
     async getTotalSupply(publicClient : PublicClient, contractAddress : `0x${string}`) : Promise<string>{
         try{
-            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            if(!publicClient) throw new PublicClientUnavailableError()
+                if(AddressUtils.isValidAddress(contractAddress)) throw new InvalidAddressError()
             const abi = this.ERC20abis.getTotalSupply
             const supply = await publicClient.readContract({
                 address: contractAddress,
@@ -88,9 +96,9 @@ export default class ERC20TokenService{
         }
     }
 
-    async revokeAllowance({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}){
+    async revokeAllowance({walletClient, contractAddress, spenderAddress} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}`> {
         return await this.setAllowance({
-            publicClient, walletClient,
+            walletClient,
             contractAddress, 
             spenderAddress, 
             amount: BigInt(0)
@@ -99,7 +107,10 @@ export default class ERC20TokenService{
 
     async readAllowance({publicClient, contractAddress, ownerAddress, spenderAddress} : {publicClient : PublicClient, contractAddress : THexAddress, ownerAddress : THexAddress, spenderAddress : THexAddress}) : Promise<ReadContractReturnType>{
         try {
-            // if(!this.publicClient) throw new Error("PublicClient is not initialized") // !!!!
+            if(!publicClient) throw new PublicClientUnavailableError()
+            if (!AddressUtils.isValidAddress(contractAddress)) throw new InvalidAddressError('Invalid token address')
+            if (!AddressUtils.isValidAddress(ownerAddress)) throw new InvalidAddressError('Invalid owner address')
+            if (!AddressUtils.isValidAddress(spenderAddress)) throw new InvalidAddressError('Invalid spender address')
             const allowance = await publicClient.readContract({
                 address: contractAddress,
                 abi : this.ERC20abis.getAllowance,
@@ -113,10 +124,15 @@ export default class ERC20TokenService{
         }
     }
 
-    async setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<`0x${string}` /*TransactionReceipt*/>{
+    async setAllowance({walletClient, contractAddress, spenderAddress, amount} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<`0x${string}`>{
         try{
             // const parsedAmount = parseUnits('20000', 18) // why parse?
-            // if (!walletClient || !publicClient) throw new Error('You must connect your wallet to initiate such a transaction.')
+
+            if (typeof amount !== 'bigint') {
+                throw new Error('Amount must be a BigInt.')
+            }
+            if (!AddressUtils.isValidAddress(contractAddress)) throw new InvalidAddressError('Invalid token address')
+            if (!AddressUtils.isValidAddress(spenderAddress)) throw new InvalidAddressError('Invalid spender address')
         
             if (!walletClient.account) throw new WalletAccountNotFoundError()
 
@@ -126,15 +142,12 @@ export default class ERC20TokenService{
                 data: encodeFunctionData({
                     abi: this.ERC20abis.setAllowance,
                     functionName: 'approve',
-                    args: [spenderAddress, amount] // Use parsed amount
+                    args: [spenderAddress, amount]
                 }),
                 chain: holesky
             })
-
-            // This hash merely indicates that the transaction was submitted, not that it was successful in executing the intended function
-            // const receipt = await publicClient.waitForTransactionReceipt({ hash }) // after the backend job
         
-            return hash // receipt
+            return hash
         }catch(error){
             console.error("Can't set the requested allowance : ", error)
             throw error
@@ -142,15 +155,20 @@ export default class ERC20TokenService{
     }
 
     async getReceipt(publicClient : PublicClient, hash : `0x${string}`) : Promise<TransactionReceipt> {
-        // !!! should format receipt to json
-        return await publicClient.waitForTransactionReceipt({ hash })
+        try{
+            if(!publicClient) throw new PublicClientUnavailableError()
+            if(!VariousUtils.isValidEthereumHash(hash)) throw new InvalidHashError()
+            return await publicClient.waitForTransactionReceipt({ hash })
+        }catch(error){
+            console.error("Can't retrieve the receipt for this transaction : ", hash)
+            throw error
+        }
     }
 
-    async setAllowanceToUnlimited({publicClient, walletClient, contractAddress, spenderAddress} : {publicClient : PublicClient, walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}` /*TransactionReceipt*/>{
-        return this.setAllowance({publicClient, walletClient, contractAddress, spenderAddress, amount : this.maxUint256})
+    async setAllowanceToUnlimited({walletClient, contractAddress, spenderAddress} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}`>{
+        return this.setAllowance({walletClient, contractAddress, spenderAddress, amount : this.maxUint256})
     }
 
-    // !!! use viem getbalance instead ?
     async getBalance(publicClient : PublicClient, tokenAddress : THexAddress, walletAddress : THexAddress) : Promise<bigint>{
         try{
             /*
@@ -158,6 +176,9 @@ export default class ERC20TokenService{
                 balancePromise,
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Network timeout')), 5000))
             ])*/ // might be needed if network down
+            if(!publicClient) throw new PublicClientUnavailableError()
+            if (!AddressUtils.isValidAddress(tokenAddress)) throw new InvalidAddressError('Invalid token address')
+            if (!AddressUtils.isValidAddress(walletAddress)) throw new InvalidAddressError('Invalid wallet address')
 
             const balance = await publicClient.readContract({
                 address: tokenAddress,
@@ -174,7 +195,6 @@ export default class ERC20TokenService{
     }
 
     // !!! test with only 5 working contracts
-    // how to deal with errors? when only one promise fails?
     async getAllBalances(publicClient : PublicClient, tokenAddresses : THexAddress[], walletAddress : THexAddress): Promise<Record<THexAddress, bigint>> {
         const balances: Record<THexAddress, bigint> = {}      
         const errors: Error[] = [];
@@ -203,7 +223,7 @@ export default class ERC20TokenService{
         return this.deployedTokens.map(token => token.symbol)
     }
 
-    /*sendMoney(){ // !!! clean key
+    /*sendTokens(){ // !!! clean key
 
         const walletClient = createWalletClient({
             account, // : address,
