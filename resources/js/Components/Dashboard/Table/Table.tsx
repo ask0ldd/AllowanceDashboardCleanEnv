@@ -7,10 +7,10 @@ import { router } from '@inertiajs/react'
 import useErrorHandler from '@/hooks/useErrorHandler'
 import { Errors } from '@inertiajs/core/types/types'
 import NumberUtils from '@/utils/NumberUtils'
-import { ReactNode } from 'react'
 import DateUtils from '@/utils/DateUtils'
 import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
 import { EthereumClientNotFoundError } from '@/errors/EthereumClientNotFoundError'
+import IModalProps from '@/types/IModalProps'
 
 export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 
@@ -29,25 +29,25 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
         try{
             if(!publicClient || !walletClient) throw new EthereumClientNotFoundError()
             // !!! initiate connection
-            modal.setStatus({visibility: true, contentId: 'sending'})
-            const receipt =  await erc20TokenService.revokeAllowance({publicClient, walletClient, contractAddress, spenderAddress})
-            console.log("revoke")
+            modal.setStatus({visibility: true, contentId: 'waitingConfirmation'})
+            const hash =  await erc20TokenService.revokeAllowance({walletClient, contractAddress, spenderAddress})
 
-            if(receipt?.status != 'success') {
-                modal.showError("Transaction receipt : The transaction has failed.")
-                return
-            }
-            // !!! show modale success transaction
-            router.put(`/allowance/revoke/${allowanceId}`, {_method: 'put',}, { // put throws this error : The PUT method is not supported for route dashboard. Supported methods: GET, HEAD.
+            // !!! show modale success transaction // should pass isUnlimited, showRevoked, etc...
+            router.put(`/allowance/revoke/${allowanceId}`, {_method: 'put', hash}, { // put throws this error : The PUT method is not supported for route dashboard. Supported methods: GET, HEAD.
                 preserveState: true,
                 preserveScroll: true,
                 preserveUrl:true,
                 onSuccess : () => { 
-                    console.log('Revocation successful')
+                    setSnackbarMessage(Date.now() + "::Transaction sent. Hash : " + hash)
                 },
                 onError: (e : Errors) => {
                     if(e?.error) modal.showError(e.error)
                 }, 
+                /*data: {
+                    showRevoked,
+                    searchValue,
+                    showUnlimitedOnly: newUnlimited
+                }*/
             })
             modal.close()
         }catch(e){
@@ -78,7 +78,7 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                     <td>{allowance.tokenContractSymbol}</td>
                     <td onClick={() => handleCopyToClipboard(allowance.ownerAddress)} title={allowance.ownerAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.ownerAddress)}</span></td>
                     <td onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.spenderAddress)}</span></td>
-                    <td>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "revoked" : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
+                    <td className={allowance.amount == 0n ? 'text-[#D86055]' : ''}>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "revoked" : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</td>
                     <td>{DateUtils.toEUFormat(allowance.updatedAt)}{/* !!! updatedAt but format*/}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
                         <button onClick={() => handleEditButtonClick(allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] text-offblack border-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
@@ -93,12 +93,13 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
             </tbody>
         </table>
         <div className='ml-auto mt-[15px] flex flex-row gap-x-[6px]'>
-            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>1</button>
-            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>2</button>
-            ...
-            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>9</button>
-            <button className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>10</button>
+            <button title="inactive yet" className='flex text-[14px] justify-center items-center w-[56px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>Prev</button>
+            <button title="inactive yet" className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>1</button>
+            <button title="inactive yet" className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>2</button>
+            <button title="inactive yet" className='flex text-[14px] justify-center items-center w-[32px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>3</button>
+            <button title="inactive yet" className='flex text-[14px] justify-center items-center w-[56px] h-[32px] bg-[#ffffff] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930] rounded-[4px]'>Next</button>
         </div>
+        {/*allowances && <Pagination allowances={allowances}/>*/}
         </>
     )
 }
@@ -107,19 +108,9 @@ interface IProps{
     /*accountAddress: THexAddress
     mockAccountPrivateKey?: string*/
     allowances?: IAllowance[]
+    // allowances ?: IPaginatedResponse<IAllowance>
     setSnackbarMessage : (value: React.SetStateAction<string | null>) => void
-    modal : {
-        visibility: boolean
-        setVisibility: React.Dispatch<React.SetStateAction<boolean>>
-        close: () => void
-        contentId : string
-        setContentId : React.Dispatch<React.SetStateAction<string>>
-        setStatus : ({ visibility, contentId }: { visibility: boolean, contentId?: string}) => void
-        showError : (errorMessage: string) => void
-        showInjectionModal : (injectedChild: ReactNode) => void
-        errorMessageRef : React.RefObject<string>
-        injectedComponentRef : React.RefObject<React.ReactNode>
-    }
+    modal : IModalProps
 }
 
 /*
