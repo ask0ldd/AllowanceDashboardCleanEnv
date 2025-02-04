@@ -3,7 +3,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from "@inertiajs/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useModalManager from '@/hooks/useModalManager';
 import { router } from '@inertiajs/react'
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
@@ -11,6 +11,7 @@ import { useSDK } from '@metamask/sdk-react';
 import checked from '@/assets/checked.png'
 import searchIcon from '@/assets/icons/searchIcon.svg'
 import debounce from 'lodash/debounce';
+import useSnackbar from '@/hooks/useSnackbar';
 
 export default function Dashboard() {
 
@@ -19,8 +20,7 @@ export default function Dashboard() {
     const { connected } = useSDK()
 
     const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
-
-    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
+    const { snackbarMessage, setSnackbarMessage } = useSnackbar()
 
     useEffect(() => {
         if(flash?.success) setSnackbarMessage(flash.success)
@@ -102,9 +102,9 @@ export default function Dashboard() {
     /*useEffect(() => {
         if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
     }, [allowances])*/ // !!!!
-
+    // snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage}
     return(
-        <DashboardLayout snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage} modal={modal}>
+        <DashboardLayout modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
@@ -152,6 +152,7 @@ interface IPageProps extends PageProps {
     success?: string
     accountAddress?: string
     mockAccountPrivateKey?: string
+    // allowances ?: IPaginatedResponse<IAllowance>
     allowances ?: IAllowance[]
 }
 

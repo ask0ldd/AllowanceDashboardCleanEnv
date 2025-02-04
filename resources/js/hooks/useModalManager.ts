@@ -14,6 +14,15 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
         setModalVisibility(true)
     }
 
+    const successHashRef = useRef<string>("")
+    const successMessageRef = useRef("")
+    function showSuccessModal (successMessage : string, hash : string) {
+        successMessageRef.current = successMessage
+        successHashRef.current = hash
+        setModalContentId("success")
+        setModalVisibility(true)
+    }
+
     const injectedComponentRef = useRef<ReactNode>(React.createElement('<div>'))
     function showInjectionModal (injectedChild : ReactNode) {
         injectedComponentRef.current = injectedChild
@@ -62,7 +71,7 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     }, [modalVisibility])
 
-    return { visibility : modalVisibility, setVisibility : setModalVisibility, close : closeModal, contentId : modalContentId, setContentId : setModalContentId, setStatus : setModalStatus, showError : showErrorModal, showInjectionModal, errorMessageRef, injectedComponentRef }
+    return { visibility : modalVisibility, setVisibility : setModalVisibility, close : closeModal, contentId : modalContentId, setContentId : setModalContentId, setStatus : setModalStatus, showError : showErrorModal, showSuccess : showSuccessModal, successMessageRef, successHashRef, showInjectionModal, errorMessageRef, injectedComponentRef }
 }
 
 export default useModalManager
