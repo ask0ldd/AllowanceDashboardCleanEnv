@@ -20,7 +20,6 @@ class AllowanceResource extends JsonResource
             'ownerAddressId' => $this->owner_address_id,
             'spenderAddressId' => $this->spender_address_id,
             'amount' => $this->amount,
-            // 'transactionHash' => $this->transaction_hash,
             'tokenContractAddress' => $this->tokenContract->address->address,
             'tokenContractSymbol' => $this->tokenContract->symbol,
             'tokenContractName' => $this->tokenContract->name,
@@ -29,6 +28,7 @@ class AllowanceResource extends JsonResource
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
             'isUnlimited' => $this->is_unlimited,
+            'pending' => $this->pending,
         ];
     }
 }

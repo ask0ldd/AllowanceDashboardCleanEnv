@@ -32,9 +32,6 @@ export default function useErrorHandler(showErrorModal : (errorMessage: string) 
         if (e instanceof InvalidAddressError) {
             console.log('Invalid address : ', e.shortMessage)
             showErrorModal('Invalid address : ' + e.shortMessage)
-        /*} else if (e instanceof ContractFunctionExecutionError) {
-                console.log('Contract function execution : ', e.shortMessage)
-                showErrorModal('aaaaaaaaa : ' + e.shortMessage)*/
         } else if (e instanceof EstimateGasExecutionError) {
             console.log('Gas estimation failed : ', e.shortMessage)
             showErrorModal(e.shortMessage == "HTTP request failed." ? "HTTP request failed : Can't access the network." : e.shortMessage)

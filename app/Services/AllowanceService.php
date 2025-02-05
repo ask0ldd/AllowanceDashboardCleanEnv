@@ -15,6 +15,14 @@ class AllowanceService
         ]);
     }
 
+    public function findAllowanceWithAddressesIds(array $addresses): ?Allowance
+    {
+        return Allowance::where('owner_address_id', $addresses['owner'])
+            ->where('token_contract_id', $addresses['token'])
+            ->where('spender_address_id', $addresses['spender'])
+            ->first();
+    }
+
     public function isSimilarAllowanceRegistered(array $addresses): bool
     {
         return (bool) Allowance::firstWhere([
@@ -36,27 +44,6 @@ class AllowanceService
         } catch (\Exception $e) {
             throw $e;
         }
-    }
-
-    public function getFistTenActiveAllowances(): \Illuminate\Pagination\LengthAwarePaginator // \Illuminate\Database\Eloquent\Collection
-    {
-        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            //->take(10)
-            ->where(function ($query) {
-                $query->where('amount', '>', 0)
-                    ->orWhere('is_unlimited', true);
-            })
-            // ->get();
-            ->paginate(10);
-    }
-
-    // !!! merge both
-    public function getFistTenAllowances(): \Illuminate\Pagination\LengthAwarePaginator // \Illuminate\Database\Eloquent\Collection
-    {
-        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            // ->take(10)
-            // ->get();
-            ->paginate(10);
     }
 
     public function getFistTenActiveAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection //\Illuminate\Pagination\LengthAwarePaginator
@@ -106,5 +93,55 @@ class AllowanceService
             })
             ->get();
         // ->paginate(10);
+    }
+
+    public function getFirstTenUnlimitedAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection
+    {
+        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
+            ->take(10)
+            ->where(function ($query) use ($searchTerm) {
+                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
+                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
+                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                        })
+                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                })
+                    ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    })
+                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    });
+            })
+            ->where(function ($query) {
+                $query->where('is_unlimited', true);
+            })
+            ->get();
+    }
+
+    public function getFirstTenRevokedAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection
+    {
+        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
+            ->take(10)
+            ->where(function ($query) use ($searchTerm) {
+                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
+                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
+                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                        })
+                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                })
+                    ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    })
+                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    });
+            })
+            ->where(function ($query) {
+                $query->where('is_unlimited', false)->where('amount', 0);
+            })
+            ->get();
     }
 }
