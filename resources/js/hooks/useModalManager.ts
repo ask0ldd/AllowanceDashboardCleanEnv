@@ -16,10 +16,19 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     const successHashRef = useRef<string>("")
     const successMessageRef = useRef("")
-    function showSuccessModal (successMessage : string, hash : string) {
+    function showTransactionSuccessModal (successMessage : string, hash : string) {
         successMessageRef.current = successMessage
         successHashRef.current = hash
-        setModalContentId("success")
+        setModalContentId("transactionSuccess")
+        setModalVisibility(true)
+    }
+
+    const failureHashRef = useRef<string>("")
+    const failureMessageRef = useRef("")
+    function showTransactionFailureModal (failureMessage : string, hash : string) {
+        failureMessageRef.current = failureMessage
+        failureHashRef.current = hash
+        setModalContentId("transactionFailure")
         setModalVisibility(true)
     }
 
@@ -71,7 +80,7 @@ function useModalManager({initialVisibility, initialModalContentId} : IModalObje
 
     }, [modalVisibility])
 
-    return { visibility : modalVisibility, setVisibility : setModalVisibility, close : closeModal, contentId : modalContentId, setContentId : setModalContentId, setStatus : setModalStatus, showError : showErrorModal, showSuccess : showSuccessModal, successMessageRef, successHashRef, showInjectionModal, errorMessageRef, injectedComponentRef }
+    return { visibility : modalVisibility, setVisibility : setModalVisibility, close : closeModal, contentId : modalContentId, setContentId : setModalContentId, setStatus : setModalStatus, showError : showErrorModal, showTransactionSuccess : showTransactionSuccessModal, showTransactionFailure : showTransactionFailureModal, successMessageRef, successHashRef, failureMessageRef, failureHashRef, showInjectionModal, errorMessageRef, injectedComponentRef }
 }
 
 export default useModalManager

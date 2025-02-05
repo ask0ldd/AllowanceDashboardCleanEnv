@@ -9,9 +9,12 @@ export default interface IModalProps{
     setStatus : ({ visibility, contentId }: { visibility: boolean, contentId?: string}) => void
     showError : (errorMessage: string) => void
     showInjectionModal : (injectedChild: ReactNode) => void
-    showSuccess : (successMessage: string, hash : `0x${string}`) => void
+    showTransactionSuccess : (successMessage: string, hash : `0x${string}`) => void
+    showTransactionFailure : (successMessage: string, hash : `0x${string}`) => void
     errorMessageRef : React.RefObject<string>
     successHashRef : React.RefObject<string>
     successMessageRef : React.RefObject<string>
+    failureHashRef : React.RefObject<string>
+    failureMessageRef : React.RefObject<string>
     injectedComponentRef : React.RefObject<React.ReactNode>
 }
