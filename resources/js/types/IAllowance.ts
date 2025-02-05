@@ -26,4 +26,5 @@ export interface IAllowance {
     createdAt: string
     updatedAt: string
     isUnlimited : boolean
+    pending : boolean
 }

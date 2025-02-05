@@ -128,6 +128,8 @@ export default class ERC20TokenService{
         try{
             // const parsedAmount = parseUnits('20000', 18) // why parse?
 
+            // !!! check if token contract exists?
+
             if (typeof amount !== 'bigint') {
                 throw new Error('Amount must be a BigInt.')
             }

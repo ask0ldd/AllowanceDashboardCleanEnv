@@ -28,13 +28,14 @@ export default function Dashboard() {
 
     const [showRevoked, setShowRevoked] = useState(false)
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
+        setShowUnlimitedOnly(false)
         const newShowRevoked = !showRevoked
         setShowRevoked(prevShowRevoked => !prevShowRevoked)
         // !!! should pass the wallet address too to filter
         router.get(route('dashboard'), {
             showRevoked: newShowRevoked,
             searchValue,
-            showUnlimitedOnly
+            showUnlimitedOnly : false
         }, {
             preserveState: true,
             replace: true,
@@ -44,13 +45,14 @@ export default function Dashboard() {
         });
     }
 
-    const [showUnlimitedOnly, setOnlyUnlimited] = useState(false)
+    const [showUnlimitedOnly, setShowUnlimitedOnly] = useState(false)
     function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){ // !!!
+        setShowRevoked(false)
         const newUnlimited = !showUnlimitedOnly
-        setOnlyUnlimited(prev => !prev)
+        setShowUnlimitedOnly(prev => !prev)
         // !!! should pass the wallet address too to filter
         router.get(route('dashboard'), { 
-            showRevoked, 
+            showRevoked : false, 
             searchValue, 
             showUnlimitedOnly : newUnlimited
         }, {
@@ -99,6 +101,11 @@ export default function Dashboard() {
         if(inputRef) inputRef.current?.focus()
     }
 
+    function handleClearFilter(event: React.MouseEvent<HTMLDivElement>): void {
+        setShowRevoked(false)
+        setShowUnlimitedOnly(false)
+    }
+
     /*useEffect(() => {
         if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
     }, [allowances])*/ // !!!!
@@ -106,7 +113,7 @@ export default function Dashboard() {
     return(
         <DashboardLayout modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
-                <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>ACTIVE ALLOWANCES</h1>
+                <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>{showUnlimitedOnly ? 'UNLIMITED' : showRevoked ? 'REVOKED' : 'ACTIVE'} ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
                     <div onClick={handleFocusInput} className='cursor-text flex pl-[16px] pr-[16px] w-[240px] h-[40px] mt-auto items-center justify-between rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]'>
                         <input spellCheck="false" ref={inputRef} disabled={!allowances || !connected} placeholder='Search' className='border-none outline-none bg-none h-[40px]' type="text" onInput={handleSearchInput} value={searchValue} />
@@ -124,10 +131,13 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div onClick={allowances && connected ? handleDisplayRevoked :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
-                            <label id='revokedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Revoked allowances</label>
+                            <label id='revokedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Revoked only</label>
                             <div role="checkbox" aria-checked={showRevoked} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
                                 {showRevoked && <img src={checked}/>}
                             </div>
+                        </div>
+                        <div onClick={allowances && connected ? handleClearFilter :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
+                            <label id='clearFiltersLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Clear filters</label>
                         </div>
                     </div>
                 </div>
