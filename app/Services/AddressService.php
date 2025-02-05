@@ -14,6 +14,20 @@ class AddressService
         });
     }
 
+    public function getIdsforAddressesOrCreate(array $addresses)
+    {
+        $createdAddresses = collect($addresses)->mapWithKeys(function ($address, $key) {
+            $createdAddress = Address::firstOrCreate(['address' => $address]);
+            return [$key => $createdAddress->id];
+        });
+
+        return [
+            'owner' => $createdAddresses['owner'],
+            'token' => $createdAddresses['token'],
+            'spender' => $createdAddresses['spender'],
+        ];
+    }
+
     public function doRequestAddressesMatchExistingAllowance($validated, $allowance): bool
     {
         // hardcoded for simplicity
