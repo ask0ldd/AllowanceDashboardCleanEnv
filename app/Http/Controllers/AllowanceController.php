@@ -11,6 +11,7 @@ use App\Services\TransactionHashService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Resources\TokenContractResource;
 
 class AllowanceController extends Controller
 {
@@ -36,6 +37,7 @@ class AllowanceController extends Controller
     public function showEditForm(Request $request): \Inertia\Response
     {
         try {
+            // $tokenList = $request->header('walletAddress') ? $this->tokenService->getAll() : new TokenContractResource([]);
             $tokenList = $this->tokenService->getAll();
             $allowance = Allowance::findOrFail($request->id);
             AllowanceResource::withoutWrapping();

@@ -77,7 +77,7 @@ class AllowanceQueueController extends Controller
             dispatch(new CheckHoleskyTransactionJob($pendingAllowance));
 
             session()->flash('success', now()->format('H:i:s') . '::Allowance queued successfully.');
-            return to_route('dashboard'); // !!! render instead
+            return to_route('dashboard'); // !!! render instead : leads to empty dashboard
         } catch (\Exception $e) {
             Log::error('Error creating allowance: ' . $e->getMessage());
             session()->flash('error', now()->format('H:i:s') . '::Error queuing allowance.');

@@ -46,10 +46,66 @@ class AllowanceService
         }
     }
 
-    public function getFistTenActiveAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection //\Illuminate\Pagination\LengthAwarePaginator
+    public function getFistTenActiveAllowancesWith(string $walletAddress, string $searchTerm): \Illuminate\Database\Eloquent\Collection //\Illuminate\Pagination\LengthAwarePaginator
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
+            ->whereHas('ownerAddress', function ($q) use ($walletAddress) {
+                $q->where('address', $walletAddress);
+            })
+            ->where(function ($query) use ($searchTerm) {
+                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
+                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
+                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                        })
+                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                })
+                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    });
+            })
+            ->where(function ($query) {
+                $query->where('amount', '>', 0)
+                    ->orWhere('is_unlimited', true);
+            })
             ->take(10)
+            ->get();
+        // ->paginate(10);
+    }
+
+    public function getFirstTenUnlimitedAllowancesWith(string $walletAddress, string $searchTerm): \Illuminate\Database\Eloquent\Collection
+    {
+        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
+            ->where('is_unlimited', true)
+            ->whereHas('ownerAddress', function ($q) use ($walletAddress) {
+                $q->where('address', $walletAddress);
+            })
+            ->where(function ($query) use ($searchTerm) {
+                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
+                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
+                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                        })
+                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                })
+                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
+                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
+                    });
+            })
+            // ->take(10)
+            ->get();
+    }
+
+    public function getFirstTenRevokedAllowancesWith(string $walletAddress, string $searchTerm): \Illuminate\Database\Eloquent\Collection
+    {
+        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
+            // ->take(10)
+            ->where(function ($query) {
+                $query->where('is_unlimited', false)->where('amount', 0);
+            })
+            ->whereHas('ownerAddress', function ($q) use ($walletAddress) {
+                $q->where('address', $walletAddress);
+            })
             ->where(function ($query) use ($searchTerm) {
                 $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
                     $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
@@ -65,19 +121,13 @@ class AllowanceService
                         $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
                     });
             })
-            ->where(function ($query) {
-                $query->where('amount', '>', 0)
-                    ->orWhere('is_unlimited', true);
-            })
             ->get();
-        // ->paginate(10);
     }
 
-    // !!! merge both
-    public function getFistTenAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection // \Illuminate\Pagination\LengthAwarePaginator
+    /*public function getFistTenAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection // \Illuminate\Pagination\LengthAwarePaginator
     {
         return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            ->take(10)
+            // ->take(10)
             ->whereHas('tokenContract', function ($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
                     ->orWhereHas('address', function ($subq) use ($searchTerm) {
@@ -93,55 +143,5 @@ class AllowanceService
             })
             ->get();
         // ->paginate(10);
-    }
-
-    public function getFirstTenUnlimitedAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection
-    {
-        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            ->take(10)
-            ->where(function ($query) use ($searchTerm) {
-                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
-                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
-                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
-                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                        })
-                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                })
-                    ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
-                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                    })
-                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
-                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                    });
-            })
-            ->where(function ($query) {
-                $query->where('is_unlimited', true);
-            })
-            ->get();
-    }
-
-    public function getFirstTenRevokedAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection
-    {
-        return Allowance::with(['tokenContract', 'ownerAddress', 'spenderAddress'])
-            ->take(10)
-            ->where(function ($query) use ($searchTerm) {
-                $query->whereHas('tokenContract', function ($q) use ($searchTerm) {
-                    $q->where('name', 'LIKE', '%' . strtolower($searchTerm) . '%')
-                        ->orWhereHas('address', function ($subq) use ($searchTerm) {
-                            $subq->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                        })
-                        ->orWhere('symbol', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                })
-                    ->orWhereHas('ownerAddress', function ($q) use ($searchTerm) {
-                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                    })
-                    ->orWhereHas('spenderAddress', function ($q) use ($searchTerm) {
-                        $q->where('address', 'LIKE', '%' . strtolower($searchTerm) . '%');
-                    });
-            })
-            ->where(function ($query) {
-                $query->where('is_unlimited', false)->where('amount', 0);
-            })
-            ->get();
-    }
+    }*/
 }
