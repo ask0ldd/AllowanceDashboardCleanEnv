@@ -5,7 +5,7 @@ import Modal from "@/Components/Modale/Modal";
 import SendingTransaction from "@/Components/Modale/SendingTransaction";
 import Snackbar from "@/Components/Snackbar/Snackbar";
 import { Head, router } from "@inertiajs/react";
-import React, { ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 import { PropsWithChildren } from "react";
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
@@ -37,8 +37,25 @@ export default function DashboardLayout({
     const { setSnackbarMessage } = useSnackbar()
 
     const { erc20TokenService } = useServices()
-    const { publicClient } = useEtherClientsContext()
+    const { publicClient, walletClient } = useEtherClientsContext()
 
+    // sending the walletAddress with each router calls
+    useEffect(() => {
+        const callback = (event: { detail: { visit: { headers: Record<string, string | null> } } }) => {
+            event.detail.visit.headers = {
+                ...event.detail.visit.headers,
+                'walletAddress': walletClient?.account?.address ? walletClient?.account?.address as string : null
+            }
+        }
+    
+        const eventListener = router.on('before', callback)
+    
+        return () => {
+            eventListener()
+        }
+    }, [walletClient?.account?.address])
+   
+    // webSocket event listeners for transaction resolution messages
     useEffect(() => {
         const channel = window.Echo.channel('transaction-results');
 
@@ -55,7 +72,7 @@ export default function DashboardLayout({
                 if(receipt?.status != 'success'){
                     throw new Error("The transaction with the following hash failed : ", event.hash)
                 } else{
-                    modal.showTransactionSuccess("", event.hash) // !!! should rename into "showSuccessfulTransaction" 
+                    modal.showTransactionSuccess("", event.hash)
                 }
             }catch(error){
                 if (error instanceof Error) {
@@ -80,7 +97,18 @@ export default function DashboardLayout({
 
     // refresh the table when the successful / failure transaction modals pop
     useEffect(() => {
-        if(modal.visibility==true && (modal.contentId == "transactionSuccess" || modal.contentId == "transactionFailure")) router.reload()
+        if(modal.visibility==true && (modal.contentId == "transactionSuccess" || modal.contentId == "transactionFailure")) {
+            router.reload({ 
+                only: ['allowances', 'flash', 'success'],
+                preserveUrl: true,
+                replace: true,
+                data: { 
+                    showRevoked : false, 
+                    searchValue: '', 
+                    showUnlimitedOnly : false,
+                } 
+            })
+        }
     }, [modal.visibility])
 
     return(

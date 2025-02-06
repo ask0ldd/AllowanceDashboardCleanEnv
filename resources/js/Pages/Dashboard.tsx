@@ -3,15 +3,15 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from "@inertiajs/core";
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import useModalManager from '@/hooks/useModalManager';
-import { router } from '@inertiajs/react'
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
 import { useSDK } from '@metamask/sdk-react';
 import checked from '@/assets/checked.png'
 import searchIcon from '@/assets/icons/searchIcon.svg'
-import debounce from 'lodash/debounce';
 import useSnackbar from '@/hooks/useSnackbar';
+import { useEtherClientsContext } from '@/hooks/useEtherClientsContext';
+import useDashboardControls from '@/hooks/useDashboardControls';
 
 export default function Dashboard() {
 
@@ -20,22 +20,40 @@ export default function Dashboard() {
     const { connected } = useSDK()
 
     const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
-    const { snackbarMessage, setSnackbarMessage } = useSnackbar()
+    const { setSnackbarMessage } = useSnackbar()
+
+    const { debouncedSearch, searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard } = useDashboardControls()
 
     useEffect(() => {
         if(flash?.success) setSnackbarMessage(flash.success)
     }, [flash.success])
 
-    const [showRevoked, setShowRevoked] = useState(false)
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
         setShowUnlimitedOnly(false)
         const newShowRevoked = !showRevoked
         setShowRevoked(prevShowRevoked => !prevShowRevoked)
-        // !!! should pass the wallet address too to filter
+        updateDashboard({ showRevoked: newShowRevoked, showUnlimitedOnly: false, searchValue })
+    }
+
+    function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){
+        setShowRevoked(false)
+        const newUnlimited = !showUnlimitedOnly
+        setShowUnlimitedOnly(prev => !prev)
+        updateDashboard({ showRevoked: false, showUnlimitedOnly: newUnlimited, searchValue })
+    }
+
+    // display only the allowances associated with the active wallet address
+    const { walletClient } = useEtherClientsContext()
+    useEffect(() => {
+        if(walletClient?.account?.address) updateDashboard({showRevoked, showUnlimitedOnly, searchValue})
+    }, [walletClient?.account?.address])
+
+    /*const refreshDashboard = useCallback((walletAddress : string | null) => {
         router.get(route('dashboard'), {
-            showRevoked: newShowRevoked,
+            showRevoked,
             searchValue,
-            showUnlimitedOnly : false
+            showUnlimitedOnly,
+            walletAddress
         }, {
             preserveState: true,
             replace: true,
@@ -43,44 +61,7 @@ export default function Dashboard() {
             preserveUrl: true,
             only: ['allowances', 'flash', 'success'],
         });
-    }
-
-    const [showUnlimitedOnly, setShowUnlimitedOnly] = useState(false)
-    function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){ // !!!
-        setShowRevoked(false)
-        const newUnlimited = !showUnlimitedOnly
-        setShowUnlimitedOnly(prev => !prev)
-        // !!! should pass the wallet address too to filter
-        router.get(route('dashboard'), { 
-            showRevoked : false, 
-            searchValue, 
-            showUnlimitedOnly : newUnlimited
-        }, {
-            preserveState: true,
-            replace: true,
-            preserveScroll: true,
-            preserveUrl : true,
-            only: ['allowances', 'flash', 'success'],
-        });
-    }
-
-    const [searchValue, setSearchValue] = useState("")
-    const debouncedSearch = useMemo(
-        () => debounce((value: string) => {
-
-            router.get(route('dashboard'), 
-                { showRevoked, searchValue: value, showUnlimitedOnly}, 
-                {
-                    preserveState: true,
-                    replace: true,
-                    preserveScroll: true,
-                    preserveUrl: true,
-                    only: ['allowances'],
-                }
-            );
-        }, 300),
-        [showRevoked, router, showUnlimitedOnly]
-    )
+    }, [showRevoked, searchValue, showUnlimitedOnly])*/
     
     useEffect(() => {
         debouncedSearch(searchValue);
@@ -110,6 +91,7 @@ export default function Dashboard() {
         if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
     }, [allowances])*/ // !!!!
     // snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage}
+
     return(
         <DashboardLayout modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
@@ -138,10 +120,13 @@ export default function Dashboard() {
                         </div>
                         <div onClick={allowances && connected ? handleClearFilter :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
                             <label id='clearFiltersLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Clear filters</label>
+                            <svg className='opacity-90' width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 11.4L12.9 14.3C13.0833 14.4833 13.3167 14.575 13.6 14.575C13.8833 14.575 14.1167 14.4833 14.3 14.3C14.4833 14.1167 14.575 13.8833 14.575 13.6C14.575 13.3167 14.4833 13.0833 14.3 12.9L11.4 10L14.3 7.1C14.4833 6.91667 14.575 6.68333 14.575 6.4C14.575 6.11667 14.4833 5.88333 14.3 5.7C14.1167 5.51667 13.8833 5.425 13.6 5.425C13.3167 5.425 13.0833 5.51667 12.9 5.7L10 8.6L7.1 5.7C6.91667 5.51667 6.68333 5.425 6.4 5.425C6.11667 5.425 5.88333 5.51667 5.7 5.7C5.51667 5.88333 5.425 6.11667 5.425 6.4C5.425 6.68333 5.51667 6.91667 5.7 7.1L8.6 10L5.7 12.9C5.51667 13.0833 5.425 13.3167 5.425 13.6C5.425 13.8833 5.51667 14.1167 5.7 14.3C5.88333 14.4833 6.11667 14.575 6.4 14.575C6.68333 14.575 6.91667 14.4833 7.1 14.3L10 11.4ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88334 18.6867 3.825 17.9743 2.925 17.075C2.025 16.1757 1.31267 15.1173 0.788001 13.9C0.263335 12.6827 0.000667932 11.3827 1.26582e-06 10C-0.000665401 8.61733 0.262001 7.31733 0.788001 6.1C1.314 4.88267 2.02633 3.82433 2.925 2.925C3.82367 2.02567 4.882 1.31333 6.1 0.788C7.318 0.262667 8.618 0 10 0C11.382 0 12.682 0.262667 13.9 0.788C15.118 1.31333 16.1763 2.02567 17.075 2.925C17.9737 3.82433 18.6863 4.88267 19.213 6.1C19.7397 7.31733 20.002 8.61733 20 10C19.998 11.3827 19.7353 12.6827 19.212 13.9C18.6887 15.1173 17.9763 16.1757 17.075 17.075C16.1737 17.9743 15.1153 18.687 13.9 19.213C12.6847 19.739 11.3847 20.0013 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="#303030"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
-                {allowances && connected ? 
+                {allowances && connected && walletClient?.account?.address ? 
                     <Table 
                         allowances={allowances} 
                         setSnackbarMessage={setSnackbarMessage}
@@ -162,103 +147,5 @@ interface IPageProps extends PageProps {
     success?: string
     accountAddress?: string
     mockAccountPrivateKey?: string
-    // allowances ?: IPaginatedResponse<IAllowance>
     allowances ?: IAllowance[]
 }
-
-// <div className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>Connect your wallet to see the allowances linked to your account.</div>
-/*
-const handleFieldChange = (e) => {
-  const { name, value } = e.target;
-  form.setData(name, value);
-  
-  if (name === 'fieldThatNeedsDataFetch') {
-    fetchAdditionalData(value);
-  }
-};
-Fetch additional data:
-Use Inertia's router.reload() method to fetch updated data from the server without a full page reload25.
-javascript
-const fetchAdditionalData = (value) => {
-  router.reload({
-    only: ['additionalData'],
-    data: { fieldValue: value },
-    preserveState: true,
-    preserveScroll: true,
-  });
-};
-
-public function index(Request $request)
-{
-    if ($request->has('fieldValue')) {
-        $additionalData = // Fetch data based on $request->fieldValue
-        return Inertia::render('YourComponent', [
-            'additionalData' => $additionalData,
-        ]);
-    }
-    
-    // Regular page load logic
-}
-*/
-
-/*return(
-        <div className='bg-dash-grey w-full h-full min-h-full flex flex-col font-jost'>
-            <Head title="Dashboard" />
-            <Header/>
-            <main>
-                <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border shadow-component-grey'>
-                    <h1 className='text-[36px] font-bold font-oswald text-offblack'>ACTIVE ALLOWANCES</h1>
-                    <Table/>
-                </div>
-            </main>
-        </div>
-    )*/
-    /*return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dashboard
-                </h2>
-            }
-        >
-            <Head title="Dashboard" />
-
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
-    );*/
-
-
-    /*
-
-    useEffect(() => {
-        const storedAddress = localStorage.getItem('walletAddress');
-        if (storedAddress) {
-            setWalletAddress(storedAddress);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (walletAddress && !allowances) {
-            fetchAllowances();
-        }
-    }, [walletAddress]);
-
-    const fetchAllowances = async () => {
-        try {
-            const response = await axios.get('/api/allowances', {
-                params: { walletAddress }
-            });
-            setAllowances(response.data);
-        } catch (error) {
-            console.error('Error fetching allowances:', error);
-        }
-    };
-    */
