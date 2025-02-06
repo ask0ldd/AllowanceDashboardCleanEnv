@@ -15,7 +15,7 @@ import useDashboardControls from '@/hooks/useDashboardControls';
 
 export default function Dashboard() {
 
-    const { flash, allowances } = usePage<IPageProps>().props
+    const { flash, allowances} = usePage<IPageProps>().props
 
     const { connected } = useSDK()
 
@@ -27,6 +27,15 @@ export default function Dashboard() {
     useEffect(() => {
         if(flash?.success) setSnackbarMessage(flash.success)
     }, [flash.success])
+
+    useEffect(() => {
+        if(flash?.resetFilters){
+            // should use only one state for all three options
+            setSearchValue('')
+            setShowRevoked(false)
+            setShowUnlimitedOnly(false)
+        }
+    }, [flash.resetFilters])
 
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
         setShowUnlimitedOnly(false)
@@ -47,22 +56,7 @@ export default function Dashboard() {
     useEffect(() => {
         if(walletClient?.account?.address) updateDashboard({showRevoked, showUnlimitedOnly, searchValue})
     }, [walletClient?.account?.address])
-
-    /*const refreshDashboard = useCallback((walletAddress : string | null) => {
-        router.get(route('dashboard'), {
-            showRevoked,
-            searchValue,
-            showUnlimitedOnly,
-            walletAddress
-        }, {
-            preserveState: true,
-            replace: true,
-            preserveScroll: true,
-            preserveUrl: true,
-            only: ['allowances', 'flash', 'success'],
-        });
-    }, [showRevoked, searchValue, showUnlimitedOnly])*/
-    
+   
     useEffect(() => {
         debouncedSearch(searchValue);
         return () => debouncedSearch.cancel();
@@ -87,20 +81,15 @@ export default function Dashboard() {
         setShowUnlimitedOnly(false)
     }
 
-    /*useEffect(() => {
-        if(!allowances || allowances.length == 0) alert('You should connect to your wallet.')
-    }, [allowances])*/ // !!!!
-    // snackbarMessage={snackbarMessage ?? ""} setSnackbarMessage={setSnackbarMessage}
-
     return(
         <DashboardLayout modal={modal}>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>{showUnlimitedOnly ? 'UNLIMITED' : showRevoked ? 'REVOKED' : 'ACTIVE'} ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
-                    <div onClick={handleFocusInput} className='cursor-text flex pl-[16px] pr-[16px] w-[240px] h-[40px] mt-auto items-center justify-between rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]'>
+                    <div onClick={handleFocusInput} className='cursor-text flex pl-[16px] pr-[16px] w-[250px] h-[40px] mt-auto items-center justify-between rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]'>
                         <input spellCheck="false" ref={inputRef} disabled={!allowances || !connected} placeholder='Search' className='border-none outline-none bg-none h-[40px]' type="text" onInput={handleSearchInput} value={searchValue} />
                         {searchValue == "" ? 
-                            <img onClick={handleFocusInput} className='cursor-text' src={searchIcon}/> : 
+                            <img alt="search icon" onClick={handleFocusInput} className='cursor-text' src={searchIcon}/> : 
                             <svg onClick={handleEmptySearchTermClick} className='cursor-pointer translate-y-[1px]' width="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                                 <path fill="#303030" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
                             </svg>}
@@ -109,13 +98,13 @@ export default function Dashboard() {
                         <div onClick={allowances && connected ? handleDisplayUnlimitedOnly : undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
                             <label id='unlimitedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Unlimited only</label>
                             <div role="checkbox" aria-checked={showUnlimitedOnly} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showUnlimitedOnly ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
-                                {showUnlimitedOnly && <img src={checked}/>}
+                                {showUnlimitedOnly && <img alt="checkbox image" src={checked}/>}
                             </div>
                         </div>
                         <div onClick={allowances && connected ? handleDisplayRevoked :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
                             <label id='revokedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Revoked only</label>
                             <div role="checkbox" aria-checked={showRevoked} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
-                                {showRevoked && <img src={checked}/>}
+                                {showRevoked && <img alt="checkbox image" src={checked}/>}
                             </div>
                         </div>
                         <div onClick={allowances && connected ? handleClearFilter :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
@@ -126,12 +115,15 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
-                {allowances && connected && walletClient?.account?.address ? 
+                {
+                    allowances && walletClient?.account?.address ? 
                     <Table 
                         allowances={allowances} 
                         setSnackbarMessage={setSnackbarMessage}
                         modal={modal}
-                    /> : <BlankTable/>}
+                    /> : 
+                    <BlankTable/>
+                }
             </div>
         </DashboardLayout>
     )
@@ -142,6 +134,7 @@ interface IPageProps extends PageProps {
       success?: string
       message? : string
       error? : string
+      resetFilters? : boolean
     };
 
     success?: string
@@ -149,3 +142,19 @@ interface IPageProps extends PageProps {
     mockAccountPrivateKey?: string
     allowances ?: IAllowance[]
 }
+
+
+    /*const refreshDashboard = useCallback((walletAddress : string | null) => {
+        router.get(route('dashboard'), {
+            showRevoked,
+            searchValue,
+            showUnlimitedOnly,
+            walletAddress
+        }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            preserveUrl: true,
+            only: ['allowances', 'flash', 'success'],
+        });
+    }, [showRevoked, searchValue, showUnlimitedOnly])*/

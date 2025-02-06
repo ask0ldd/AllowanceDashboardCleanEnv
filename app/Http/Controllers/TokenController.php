@@ -9,16 +9,15 @@ use Inertia\Inertia;
 
 class TokenController extends Controller
 {
-    // !!! try catch
     public function getSymbol(Request $request)
     {
-        $address = Address::whereLike('address', "{$request->address}", true)->first(); // !!! fix case sensitive
-        // $address = Address::whereRaw('BINARY `address` LIKE ?', ["%{$request->address}%"])->first();
+        $address = Address::whereLike('address', "{$request->address}", true)->first();
+
         if (!$address) {
             return Inertia::render('Allowance');
         }
         $contract = TokenContract::where('token_address_id', '=', $address->id)->first();
-        // !!! create relationship so this works : $contract = $address->tokenContract;
+        // should create relationship to make this work : $contract = $address->tokenContract;
         if (!$contract) {
             return Inertia::render('Allowance');
         }

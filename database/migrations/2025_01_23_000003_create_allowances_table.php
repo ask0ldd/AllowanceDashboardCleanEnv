@@ -96,7 +96,6 @@ return new class extends Migration
                 'spender_address_id' => $spenderId,
                 'amount' => 1000,
                 'is_unlimited' => false,
-                // 'transaction_hash' => '0x' . str()->random(64),
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
@@ -107,8 +106,6 @@ return new class extends Migration
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-
-            // !!! add a transaction hash for the inserted id
         }
     }
 

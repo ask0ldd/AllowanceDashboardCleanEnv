@@ -68,7 +68,6 @@ class AllowanceQueueController extends Controller
                 $allowance = $this->allowanceService->findAllowanceWithAddressesIds($addressIds);
 
                 if ($allowance) {
-                    Log::info("allowance found");
                     $allowance->pending = true;
                     $allowance->save();
                 }
@@ -81,7 +80,8 @@ class AllowanceQueueController extends Controller
         } catch (\Exception $e) {
             Log::error('Error creating allowance: ' . $e->getMessage());
             session()->flash('error', now()->format('H:i:s') . '::Error queuing allowance.');
-            return back()->withErrors(['error' => 'An error occurred while creating the allowance: ' . $e->getMessage(),])->withInput(); // !!! switch to inertia error handling
+            // !!! switch to inertia error handling
+            return back()->withErrors(['error' => 'An error occurred while creating the allowance: ' . $e->getMessage(),])->withInput();
         }
     }
 

@@ -52,7 +52,7 @@ class AllowanceController extends Controller
         } catch (\Exception $e) {
             return Inertia::render('Page404', [
                 'message' => 'An error occurred while processing your request',
-            ]); // !!! deal with message
+            ]);
         }
     }
 }

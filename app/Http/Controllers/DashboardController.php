@@ -6,7 +6,6 @@ use Inertia\Inertia;
 use App\Http\Resources\AllowanceResource;
 use App\Services\AllowanceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -23,9 +22,9 @@ class DashboardController extends Controller
         $showRevoked = $request->boolean('showRevoked', false);
         $showUnlimitedOnly = $request->boolean('showUnlimitedOnly', false);
         $searchValue = $request->string('searchValue', "");
+        $resetFilters = $request->string('resetFilters', false);
 
         $walletAddress = strtolower($request->header('walletAddress'));
-        // Log::info($walletAddress);
 
         $allowances = null;
         if ($showRevoked) {
@@ -35,6 +34,8 @@ class DashboardController extends Controller
         } else {
             $allowances = $this->allowanceService->getFistTenActiveAllowancesWith($walletAddress, $searchValue);
         }
+
+        session()->flash('resetFilters', $resetFilters);
 
         AllowanceResource::withoutWrapping();
         return Inertia::render('Dashboard', [

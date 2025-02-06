@@ -3,7 +3,7 @@ import { debounce } from "lodash"
 import { useState, useMemo, useEffect } from "react"
 
 export default function useDashboardControls(){
-    const updateDashboard = (params : any) => { // !!! improve any
+    const updateDashboard = (params : {showRevoked : boolean, searchValue : string, showUnlimitedOnly : boolean,}) => {
         router.get(route('dashboard'), {
             ...params,
         }, {

@@ -28,6 +28,20 @@ class AddressService
         ];
     }
 
+    public function getIdsForAddresses(array $addresses)
+    {
+        $foundAddresses = collect($addresses)->mapWithKeys(function ($address, $key) {
+            $foundAddress = Address::where('address', $address)->first();
+            return [$key => $foundAddress ? $foundAddress->id : null];
+        });
+
+        return [
+            'owner' => $foundAddresses['owner'],
+            'token' => $foundAddresses['token'],
+            'spender' => $foundAddresses['spender'],
+        ];
+    }
+
     public function doRequestAddressesMatchExistingAllowance($validated, $allowance): bool
     {
         // hardcoded for simplicity

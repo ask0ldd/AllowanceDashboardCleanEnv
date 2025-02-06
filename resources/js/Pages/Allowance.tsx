@@ -54,11 +54,8 @@ export default function Allowance() {
         if(flash?.error) modal.showError(flash.error)
     }, [flash.error])
 
-    // !!! should check if account address = metamask account address
-    // if not, send new address
     // if disconnected flush session address
 
-    // !!! should not be able to send an allowance if not connected
     async function handleSubmitAllowanceForm(e : FormEvent<HTMLFormElement>) : Promise<void> {
         e.preventDefault()
         clearErrors()
@@ -70,9 +67,10 @@ export default function Allowance() {
         modal.setStatus({visibility: true, contentId: 'waitingConfirmation'})
         try{
             if(!publicClient || !walletClient) throw new EthereumClientNotFoundError()
+            if(data.ownerAddress != walletClient.account?.address) throw new Error("The transaction signature process requires the owner address to match your connected wallet address.")
             const hash = !data.isUnlimited ?
-                await erc20TokenService.setAllowance({walletClient /* desaccord énoncé !!!*/ , contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
-                    await erc20TokenService.setAllowanceToUnlimited({walletClient /* desaccord énoncé !!!*/ , contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
+                await erc20TokenService.setAllowance({walletClient, contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress, amount : BigInt(data.amount)}) :
+                    await erc20TokenService.setAllowanceToUnlimited({walletClient , contractAddress : data.ERC20TokenAddress as THexAddress, spenderAddress : data.spenderAddress as THexAddress})
 
             // transform : Ensures that the state transformation is fully resolved before proceeding with POST or PUT requests
             transform((data) => ({
@@ -109,14 +107,22 @@ export default function Allowance() {
     }
 
     async function isAllowanceFormValid(){
-        // !!!! can't check if address exists through viem since balances may be 0 so only check contract address supply
-        // !!!! check contract supply / check invalid contract
         let errors = validateHexAddresses()
+
+        if(publicClient){
+            if(!await erc20TokenService.isContract(publicClient, data.ERC20TokenAddress as THexAddress)) {
+                console.log("The contract you want to interact with doesn't exist.")
+                modal.showError("The contract you want to interact with doesn't exist.")
+                errors++
+            }
+        }else{
+            console.log("You must connect your wallet to initiate such a transaction.")
+            modal.showError("You must connect your wallet to initiate such a transaction.")
+            errors++
+        }
 
         // amount must be number when unlimited is off
         if (!data.isUnlimited && !validateAmount()) errors++
-
-        // !! should tell if amount > balance ?
 
         if(data.ERC20TokenAddress == data.spenderAddress) {
             setError("spenderAddress", "Spender and Token addresses must be distinct.")
@@ -190,8 +196,6 @@ export default function Allowance() {
         })
     }
 
-    // !!! modal with token name, symbol
-    // !!! modal contract doesn't not exist
     return(
         <DashboardLayout modal={modal}>
             <TokenPanel ownedTokens={ownedTokens} setSnackbarMessage={setSnackbarMessage}/>
@@ -206,11 +210,11 @@ export default function Allowance() {
                             <input aria-labelledby="contractAddressLabel" readOnly={mode.current == "edit"} onFocus={() => clearErrors('ERC20TokenAddress')} onBlur={handleContractAddressBlur} style={{marginTop:0}} id="contractInput" placeholder="0x20c...a20cb" type="text" value={data.ERC20TokenAddress} className={textinputClasses + ' flex-grow' + (errors['ERC20TokenAddress'] ? ' border-l-[6px] border-solid border-[#EC3453] pl-[12px]' : '')} onInput={(e) => handleSetInput(e)}/>
                             {mode.current == "edit" && <div className="opacity-80 absolute w-[44px] h-[44px] translate-x-[-100%] ml-[100%] flex-shrink-0 flex justify-center items-center">
                                 <svg width="20" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                             </div>}
                         </div>
-                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-[#E1E3E6]">{(existingAllowance?.tokenContractSymbol || symbol) && <img src={symbol ? `/coins/${symbol}.svg` : `/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
+                        <div className="w-[44px] h-[44px] rounded-[4px] bg-[#ffffff] flex-shrink-0 flex justify-center items-center outline-1 outline outline-[#E1E3E6]">{(existingAllowance?.tokenContractSymbol || symbol) && <img alt={symbol + " coin icon"} src={symbol ? `/coins/${symbol}.svg` : `/coins/${existingAllowance?.tokenContractSymbol}.svg`} className="w-[34px]"/>}</div>
                     </div>
                     
                     <div className="flex flex-row justify-between gap-x-[15px]"><label id="ownerAddressLabel" className={labelClasses}>Owner Address</label><span className="text-[#EC3453] mt-auto">{errors['ownerAddress']}</span></div>
@@ -218,7 +222,7 @@ export default function Allowance() {
                         <input readOnly={mode.current == "edit"} aria-labelledby="ownerAddressLabel" onFocus={() => clearErrors('ownerAddress')} id="ownerInput" placeholder="0x20c...a20cb" type="text" value={data.ownerAddress} className={textinputClasses + (errors['ownerAddress'] ? ' border-l-[6px] border-solid border-[#EC3453] pl-[12px]' : '')} onInput={(e) => handleSetInput(e)}/>
                         {mode.current == "edit" && <div className="opacity-80 absolute w-[44px] h-[44px] translate-x-[-100%] translate-y-[-100%] ml-[100%] flex-shrink-0 flex justify-center items-center">
                             <svg width="20" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>}
                     </div>
@@ -229,7 +233,7 @@ export default function Allowance() {
                         <input readOnly={mode.current == "edit"} aria-labelledby="spenderAddressLabel" onFocus={() => clearErrors('spenderAddress')} id="spenderInput" placeholder="0x20c...a20cb" type="text" value={data.spenderAddress} className={textinputClasses + (errors['spenderAddress'] ? ' border-l-[6px] border-solid border-[#EC3453] pl-[12px]' : '')} onInput={(e) => handleSetInput(e)}/>
                         {mode.current == "edit" && <div className="opacity-80 absolute w-[44px] h-[44px] translate-x-[-100%] translate-y-[-100%] ml-[100%] flex-shrink-0 flex justify-center items-center">
                             <svg width="20" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 9V5C4 3.93913 4.42143 2.92172 5.17157 2.17157C5.92172 1.42143 6.93913 1 8 1C9.06087 1 10.0783 1.42143 10.8284 2.17157C11.5786 2.92172 12 3.93913 12 5V9M11 14H11.01M8.01 14H8.02M5.02 14H5.03M1 11C1 10.4696 1.21071 9.96086 1.58579 9.58579C1.96086 9.21071 2.46957 9 3 9H13C13.5304 9 14.0391 9.21071 14.4142 9.58579C14.7893 9.96086 15 10.4696 15 11V17C15 17.5304 14.7893 18.0391 14.4142 18.4142C14.0391 18.7893 13.5304 19 13 19H3C2.46957 19 1.96086 18.7893 1.58579 18.4142C1.21071 18.0391 1 17.5304 1 17V11Z" stroke="#303030" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>}
                     </div>

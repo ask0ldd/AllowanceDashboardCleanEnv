@@ -4,6 +4,7 @@ import { InvalidHashError } from "@/errors/InvalidHashError";
 import { PublicClientUnavailableError } from "@/errors/PublicClientUnavailableError";
 import { WalletAccountNotFoundError } from "@/errors/WalletAccountNotFoundError";
 import { THexAddress } from "@/types/THexAddress";
+import { isHexAddress } from "@/types/typeguards";
 import AddressUtils from "@/utils/AddressUtils";
 import VariousUtils from "@/utils/VariousUtils";
 import { encodeFunctionData, parseAbi, PublicClient, ReadContractReturnType, TransactionReceipt, WalletClient } from "viem"
@@ -126,10 +127,6 @@ export default class ERC20TokenService{
 
     async setAllowance({walletClient, contractAddress, spenderAddress, amount} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<`0x${string}`>{
         try{
-            // const parsedAmount = parseUnits('20000', 18) // why parse?
-
-            // !!! check if token contract exists?
-
             if (typeof amount !== 'bigint') {
                 throw new Error('Amount must be a BigInt.')
             }
@@ -144,7 +141,7 @@ export default class ERC20TokenService{
                 data: encodeFunctionData({
                     abi: this.ERC20abis.setAllowance,
                     functionName: 'approve',
-                    args: [spenderAddress, amount]
+                    args: [spenderAddress, amount < this.maxUint256 ? amount : this.maxUint256]
                 }),
                 chain: holesky
             })
@@ -196,7 +193,6 @@ export default class ERC20TokenService{
         }
     }
 
-    // !!! test with only 5 working contracts
     async getAllBalances(publicClient : PublicClient, tokenAddresses : THexAddress[], walletAddress : THexAddress): Promise<Record<THexAddress, bigint>> {
         const balances: Record<THexAddress, bigint> = {}      
         const errors: Error[] = [];
@@ -225,7 +221,23 @@ export default class ERC20TokenService{
         return this.deployedTokens.map(token => token.symbol)
     }
 
-    /*sendTokens(){ // !!! clean key
+    async isContract(publicClient : PublicClient, address: THexAddress): Promise<boolean> {
+        if(!isHexAddress(address)) return false
+        console.log("is contract")
+        try {
+            const bytecode = await publicClient.getCode({
+              address
+            })
+            
+            // If bytecode exists and is not '0x', it's a contract
+            return bytecode !== undefined && bytecode.length > 2
+        } catch (error) {
+            console.error('Error checking address:', error)
+            return false
+        }
+    }
+
+    /*sendTokens(){
 
         const walletClient = createWalletClient({
             account, // : address,
@@ -277,46 +289,3 @@ export default class ERC20TokenService{
     }
     */
 }
-
-/*
-getKnownDeployedTokens(){
-    return this.deployedTokens
-}*/
-
-
-/*
-    try {
-    const blockNumber = await client.getBlockNumber()
-    } catch (e) {
-    const error = e as GetBlockNumberErrorType
-    
-    if (error.name === 'InternalRpcError') {
-        console.log(error.code) // -32603
-    }
-    
-    if (error.name === 'HttpRequestError') {
-        console.log(error.headers)
-        console.log(error.status)
-    }
-    }
-*/
-
-/*
-const account: PrivateKeyAccount = privateKeyToAccount(mockAccountPrivateKey as THexAddress)
-const request = await this.publicClient.prepareTransactionRequest({
-    account,
-    to: contractAddress,
-    data: encodeFunctionData({
-        abi : this.ERC20abis.setAllowance,
-        functionName: 'approve',
-        args: [spenderAddress, amount]
-    }),
-    chain: this.publicClient.chain,
-    // !!! really useful?!!!
-    maxFeePerGas: 150000000000n, // !!! The absolute maximum amount a user is willing to pay per unit of gas
-    maxPriorityFeePerGas: 1000000000n, // The highest amount offered as a tip to validators for each unit of gas consumed
-    // nonce: 1, // A unique number that represents the count of transactions sent from a particular address !!!!! how to setup ??? !!!
-    type: 'eip1559', // Refers to the specific format and fields included in the transaction.
-})
-
-const serializedTransaction = await this.publicClient.account.signTransaction({...request})*/
