@@ -12,7 +12,7 @@ export default function SpenderRow({spenderName, spenderAddress, imgUrl, showSep
     return(
         <div className="w-full flex flex-col">
             <div className="flex flex-row h-[68px] w-full">
-                <img src={imgUrl} className="h-[42px] w-[42px] rounded-full self-center opacity-75"/>
+                <img alt="spender icon" src={imgUrl} className="h-[42px] w-[42px] rounded-full self-center opacity-75"/>
                 <div className="flex flex-col ml-[14px] justify-center">
                     <span className="font-semibold translate-y-[0px] text-[#474b55]">{spenderName}</span>
                     <span onClick={() => handleCopyToClipboard(spenderAddress)} title={spenderAddress} className="cursor-copy hover:underline hover:bg-[#e8ebed] translate-y-[1px] text-[#92949Cdd]">{AddressUtils.maskAddress(spenderAddress as THexAddress)}</span>

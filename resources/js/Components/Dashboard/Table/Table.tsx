@@ -39,7 +39,6 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
     async function handleRevokeButtonClick(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){
         try{
             if(!publicClient || !walletClient || !walletClient.account) throw new EthereumClientNotFoundError()
-            // !!! initiate connection
             modal.setStatus({visibility: true, contentId: 'waitingConfirmation'})
             const hash =  await erc20TokenService.revokeAllowance({walletClient, contractAddress, spenderAddress})
 
@@ -106,7 +105,7 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                     <td onClick={() => handleCopyToClipboard(allowance.spenderAddress)} title={allowance.spenderAddress}><span className='hover:bg-[hsl(204,12%,85%)] cursor-copy'>{AddressUtils.maskAddress(allowance.spenderAddress)}</span></td>
                     <td className={allowance.amount == 0n && allowance.isUnlimited ? 'text-[#D86055]' : ''}>
                         <div className='flex gap-x-[12px]'>
-                            <span className='flex items-center'>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "Revoked" : NumberUtils.addThousandsSeparators(allowance.amount) /* !!! should be compared with devnet amount*/}</span>
+                            <span className='flex items-center'>{allowance.isUnlimited ? 'Unlimited' : allowance.amount == 0n ? "Revoked" : (allowance.amount < 100000000000000n ? NumberUtils.addThousandsSeparators(allowance.amount) : NumberUtils.formatNumber(allowance.amount))}</span>
                             {allowance.pending ? <div title="being processed" className='items-center justify-center' role="status">
                                                     <svg aria-hidden="true" className="w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-[#30DFAB]" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                         <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
@@ -116,7 +115,7 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                                                 </div> : ''}
                         </div>
                     </td>
-                    <td>{DateUtils.toEUFormat(allowance.updatedAt)}{/* !!! updatedAt but format*/}</td>
+                    <td>{DateUtils.toEUFormat(allowance.updatedAt)}</td>
                     <td className="flex flex-row gap-x-[10px] justify-center items-center h-[50px] px-[10px]">
                         <button onClick={() => handleEditButtonClick(allowance.id)} className="flex flex-row justify-center items-center w-1/2 h-[38px] gap-x-[8px] font-semibold bg-tablebutton-bg rounded-full border-[2px] border-offblack text-offblack shadow-[0_2px_4px_#A8B0BD40,0_4px_5px_#5D81B960] hover:bg-[#E8EBED] hover:shadow-[0_1px_0_#FFFFFF]">
                             Edit
@@ -142,17 +141,14 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 }
 
 interface IProps{
-    /*accountAddress: THexAddress
-    mockAccountPrivateKey?: string*/
     allowances?: IAllowance[]
-    // allowances ?: IPaginatedResponse<IAllowance>
     setSnackbarMessage : (value: React.SetStateAction<string | null>) => void
     modal : IModalProps
 }
 
 /*
 
-!!!! remplace with link
+!!! remplace with link
 
 <Link key={allowance.id} href={route('allowances.edit', allowance.id)}>
     Edit Allowance {allowance.id}
@@ -161,38 +157,3 @@ interface IProps{
 <Link href={route('editallowance', { id: 0 })}>Edit Allowance</Link>
 
 */
-
-    /* get rid of 
-    const dummyContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
-    const dummyOwnerAddress = '0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097'
-    const dummySpenderAddress =  '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955'
-    const dummyContractOwnerAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-    */
-
-            /*router.delete(`/allowance/delete/${allowanceId}`, {
-            preserveState: true,
-            preserveScroll: true,
-        })*/
-
-
-                /*async function showConfirmationModale(allowanceId : number, contractAddress : THexAddress, spenderAddress : THexAddress){ // should pass edit or create
-        // !!! add unlimited alert for user if needed
-        modal.showInjectionModal(
-            <div className="flex flex-col w-full gap-y-[20px]">
-                <div className="flex flex-shrink-0 justify-center items-center self-center w-[52px] h-[52px] bg-[#d0fae7] rounded-full">
-                    <div className="flex flex-grow-0 justify-center items-center w-[36px] h-[36px] bg-[#40CBADBB] rounded-full">
-                    </div>
-                </div>
-                <h3 className="w-full text-center font-bold text-[24px]">Confirm the following revocation</h3>
-                <p className="flex flex-col w-full text-[14px] italic bg-[#ECEFF1] p-[12px] border-l border-[#303030] border-dashed">Revoking won't</p>
-                <div className="flex flex-row gap-x-[10px]">
-                    <button className="font-semibold flex-auto h-[44px] w-full border-[3px] border-solid border-offblack rounded-[4px] text-offblack">
-                        Cancel
-                    </button>
-                    <button onClick={() => processConfirmedRevocation(allowanceId, contractAddress, spenderAddress)} className="font-semibold flex-auto h-[44px] w-full bg-gradient-to-r from-[#2A9F8C] to-[#4DB85A] rounded-[4px] text-offwhite shadow-[0_4px_8px_#4DB85A40]">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        )
-    }*/

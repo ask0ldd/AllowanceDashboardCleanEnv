@@ -1,11 +1,11 @@
-import validIcon from '@/assets/icons/validicon.png'
+import errorIcon from '@/assets/icons/erroricon.png'
 import VariousUtils from '@/utils/VariousUtils'
 
 export default function TransactionFailure({failureMessage, hash, closeModal} : {failureMessage : string, hash : string, closeModal : () => void}){
     return(
         <div className="flex flex-col w-full gap-y-[5px]">
-            <img className='h-[56px] w-[56px] mt-[12px] self-center' src={validIcon}/>
-            <h3 className="mt-[23px] w-full text-center font-bold text-[22px]">Your transaction has been validated.</h3>
+            <img alt="error icon" className='h-[56px] w-[56px] mt-[12px] self-center' src={errorIcon}/>
+            <h3 className="mt-[23px] w-full text-center font-bold text-[22px]">Your transaction has failed.</h3>
             {/*<hr className='mt-[15px]'/>*/}
             <div style={{overflowWrap: 'break-word', wordWrap: 'break-word', wordBreak:'break-all'}} className="mt-[20px] flex flex-grow-0 justify-center">
                 {/*successMessage*/}

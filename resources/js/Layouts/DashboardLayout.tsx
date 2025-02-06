@@ -7,8 +7,6 @@ import Snackbar from "@/Components/Snackbar/Snackbar";
 import { Head, router } from "@inertiajs/react";
 import { useEffect } from "react";
 import { PropsWithChildren } from "react";
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
 import { useServices } from "@/hooks/useServices";
 import { useEtherClientsContext } from "@/hooks/useEtherClientsContext";
 import useSnackbar from "@/hooks/useSnackbar";
@@ -16,24 +14,14 @@ import WaitingConfirmation from "@/Components/Modale/WaitingConfirmation";
 import IModalProps from "@/types/IModalProps";
 import TransactionSuccess from "@/Components/Modale/TransactionSuccess";
 import TransactionFailure from "@/Components/Modale/TransactionFailure";
-
-window.Pusher = Pusher;
-
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
+import useEcho from "@/hooks/useEcho";
 
 export default function DashboardLayout({
     children,
     modal
 }: PropsWithChildren<IProps>) {
 
+    useEcho()
     const { setSnackbarMessage } = useSnackbar()
 
     const { erc20TokenService } = useServices()
@@ -57,7 +45,12 @@ export default function DashboardLayout({
    
     // webSocket event listeners for transaction resolution messages
     useEffect(() => {
-        const channel = window.Echo.channel('transaction-results');
+
+        window.Echo.connector.pusher.connection.bind('error', (error : Error) => {
+            console.error('Error connecting to Reverb:', error)
+        })
+
+        const channel = window.Echo.channel('transaction-results')
 
         channel.listen('.transaction.complete', async (event: any) => {
             try{
@@ -99,13 +92,14 @@ export default function DashboardLayout({
     useEffect(() => {
         if(modal.visibility==true && (modal.contentId == "transactionSuccess" || modal.contentId == "transactionFailure")) {
             router.reload({ 
-                only: ['allowances', 'flash', 'success'],
+                only: ['allowances', 'flash', 'success', 'resetFilters'],
                 preserveUrl: true,
                 replace: true,
                 data: { 
                     showRevoked : false, 
                     searchValue: '', 
                     showUnlimitedOnly : false,
+                    resetFilters : true
                 } 
             })
         }
