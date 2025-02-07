@@ -68,7 +68,7 @@ class AllowanceService
                 $query->where('amount', '>', 0)
                     ->orWhere('is_unlimited', true);
             })
-            ->take(10)
+            // ->take(10)
             ->get();
         // ->paginate(10);
     }
@@ -122,6 +122,21 @@ class AllowanceService
                     });
             })
             ->get();
+    }
+
+    public function getFistTenActiveAllowancesFor(string $walletAddress): \Illuminate\Database\Eloquent\Collection //\Illuminate\Pagination\LengthAwarePaginator
+    {
+        return Allowance::with(['ownerAddress'])
+            /*->whereHas('ownerAddress', function ($q) use ($walletAddress) {
+                $q->where('address', $walletAddress);
+            })*/
+            ->where(function ($query) {
+                $query->where('amount', '>', 0)
+                    ->orWhere('is_unlimited', true);
+            })
+            // ->take(10)
+            ->get();
+        // ->paginate(10);
     }
 
     /*public function getFistTenAllowancesWith(string $searchTerm): \Illuminate\Database\Eloquent\Collection // \Illuminate\Pagination\LengthAwarePaginator

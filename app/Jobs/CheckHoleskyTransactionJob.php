@@ -25,7 +25,7 @@ class CheckHoleskyTransactionJob implements ShouldQueue
     protected PendingAllowance $pendingAllowance;
     public $tries = 5; // Maximum number of attempts
     private $attemptCount = 0;
-    // public $backoff = [60, 120, 360, 600]; // Retry delays in seconds
+    public $backoff = [60, 120, 360, 600]; // Retry delays in seconds
 
     /**
      * Create a new job instance.
@@ -46,6 +46,7 @@ class CheckHoleskyTransactionJob implements ShouldQueue
             // throw new ManualJobFailedException("Manual Fail for testing purposes.");
 
             $successNeedle = "title='A Status code indicating if the top-level call succeeded or failed (applicable for Post BYZANTIUM blocks only)'><i class='fa fa-check-circle me-1'></i>Success</span>";
+            $secondNeedle = "<i class='fa fa-dot-circle text-secondary me-1'></i>Indexing</span><span class='small text-muted'><i>&nbsp; This transaction has been included and will be reflected in a short while.</i>";
 
             $response = $scrapingService->scrapeEtherscan($this->transactionHash);
 
@@ -73,7 +74,7 @@ class CheckHoleskyTransactionJob implements ShouldQueue
 
                 if ($existingAllowance) {
                     // Update existing allowance
-                    $existingAllowance->update([ // !!! move to service ?
+                    $existingAllowance->update([ // move to service
                         'amount' => $pendingAllowance['amount'],
                         'is_unlimited' => $pendingAllowance['is_unlimited'],
                         'pending' => false
@@ -124,7 +125,8 @@ class CheckHoleskyTransactionJob implements ShouldQueue
     {
         Log::info('failed called');
         try {
-            // removing the pending status on the potentially existing allowance // !!! should group into one service method
+            // should be grouped into one service method
+            // removing the pending status on the potentially existing allowance 
             $addressIds = $addressService->getIdsforAddresses([
                 'owner' => $this->pendingAllowance['owner_address'],
                 'token' => $this->pendingAllowance['token_contract_address'],

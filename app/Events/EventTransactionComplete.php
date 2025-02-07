@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\BroadcastException;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -22,8 +23,6 @@ class EventTransactionComplete implements ShouldBroadcast
     {
         Log::info('EventTransactionComplete constructed', ['data' => $hash]); // !!!
         $this->hash = $hash;
-
-        // !!! deal with error thrown when broadcasting server is down
     }
 
     /**
@@ -43,4 +42,27 @@ class EventTransactionComplete implements ShouldBroadcast
     {
         return 'transaction.complete';
     }
+
+    /*public function broadcastWhen(): bool
+    {
+        try {
+            // Attempt to check broadcasting connection
+            // This is a placeholder; implement actual connection check
+            $this->checkBroadcastingConnection();
+            return true;
+        } catch (BroadcastException $e) {
+            Log::error('Broadcasting failed', ['error' => $e->getMessage()]);
+            // Handle the error (e.g., store in database for retry)
+            $this->handleBroadcastingError();
+            return false;
+        }
+    }
+
+    private function checkBroadcastingConnection()
+    {
+    }
+
+    private function handleBroadcastingError()
+    {
+    }*/
 }

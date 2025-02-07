@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\AllowanceResource;
+use Inertia\Inertia;
 use App\Jobs\CheckHoleskyTransactionJob;
 use App\Models\Allowance;
 use App\Services\AllowanceService;
@@ -76,11 +78,17 @@ class AllowanceQueueController extends Controller
             dispatch(new CheckHoleskyTransactionJob($pendingAllowance));
 
             session()->flash('success', now()->format('H:i:s') . '::Allowance queued successfully.');
-            return to_route('dashboard'); // !!! render instead : leads to empty dashboard
+            session()->flash('resetFilters', true);
+            // !!! render instead : leads to empty dashboard
+            return to_route('dashboard'); //->with(['success' => now()->format('H:i:s') . '::Allowance queued successfully.', 'resetFilters' => true]);
+            /*$allowances = $this->allowanceService->getFistTenActiveAllowancesFor('allowances : ' . $validated['ownerAddress']);
+            Log::info($allowances);
+            return Inertia::render('Dashboard', [
+                'allowances' => AllowanceResource::collection($allowances),
+            ]);*/
         } catch (\Exception $e) {
             Log::error('Error creating allowance: ' . $e->getMessage());
             session()->flash('error', now()->format('H:i:s') . '::Error queuing allowance.');
-            // !!! switch to inertia error handling
             return back()->withErrors(['error' => 'An error occurred while creating the allowance: ' . $e->getMessage(),])->withInput();
         }
     }

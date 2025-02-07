@@ -56,7 +56,7 @@ return new class extends Migration
 
         $now = now();
 
-        // !!! use factory instead
+        // use seeders instead
 
         foreach ($defaultTokens as &$token) {
             $addressId = DB::table('addresses')->insertGetId([

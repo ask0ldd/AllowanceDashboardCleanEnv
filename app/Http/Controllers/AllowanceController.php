@@ -11,7 +11,6 @@ use App\Services\TransactionHashService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Resources\TokenContractResource;
 
 class AllowanceController extends Controller
 {

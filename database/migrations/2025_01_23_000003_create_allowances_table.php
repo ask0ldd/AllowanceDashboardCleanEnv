@@ -49,7 +49,8 @@ return new class extends Migration
             $table->rawIndex('(CASE WHEN is_unlimited THEN amount IS NULL ELSE amount IS NOT NULL END)', 'check_amount_unlimited');
         });*/
 
-        $owner = strtolower('0xBC389292158700728d014d5b2b6237bFd36FA09C');
+        // $owner = strtolower('0xBC389292158700728d014d5b2b6237bFd36FA09C');
+        $owner = strtolower('0xAdf237856D703b7bF41FD3AB20966Acc2b9aB420');
 
         $defaultTokens = [
             ['name' => 'CrystalDrive', 'symbol' => 'CRD', 'token_address' => strtolower('0xf33c13a871b8132827D0370359024726d137D98F'), 'decimals' => 18],
