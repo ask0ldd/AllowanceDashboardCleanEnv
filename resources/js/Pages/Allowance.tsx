@@ -8,15 +8,15 @@ import { isHexAddress } from "@/types/typeguards";
 import AddressUtils from "@/utils/AddressUtils";
 import NumberUtils from "@/utils/NumberUtils";
 import { router, useForm, usePage } from "@inertiajs/react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import type { Errors, PageProps } from "@inertiajs/core";
 import SpenderPanel from "@/Components/LateralPanels/SpenderPanel";
-import useModalManager from "@/hooks/useModalManager";
 import useErrorHandler from "@/hooks/useErrorHandler";
 import { useEtherClientsContext } from "@/hooks/useEtherClientsContext";
 import { EthereumClientNotFoundError } from "@/errors/EthereumClientNotFoundError";
 import useSnackbar from "@/hooks/useSnackbar";
 import IFormAllowance from "@/types/IFormAllowance";
+import { useModalContext } from "@/context/ModalContext";
 
 export default function Allowance() {
 
@@ -24,7 +24,8 @@ export default function Allowance() {
 
     const [symbol, setSymbol] = useState<string | null>(null)
 
-    const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
+    const { modal } = useModalContext();
+    // const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
     const { setSnackbarMessage } = useSnackbar()
     // centralizing viem errors management
     const { handleSetAllowanceErrors } = useErrorHandler(modal.showError)
@@ -50,6 +51,7 @@ export default function Allowance() {
         setData(form  => ({...form, ['ownerAddress'] : ""}))
     }, [walletClient?.account?.address])
 
+    // collect any kind of error message from the backend and display it
     useEffect(() => {
         if(flash?.error) modal.showError(flash.error)
     }, [flash.error])
@@ -63,6 +65,7 @@ export default function Allowance() {
         await processAllowance()
     }
 
+    // process a frontend validated allowance before dispatching it to the backend
     async function processAllowance(){
         modal.setStatus({visibility: true, contentId: 'waitingConfirmation'})
         try{
@@ -106,6 +109,7 @@ export default function Allowance() {
         }
     }
 
+    // validates the submitted data
     async function isAllowanceFormValid(){
         let errors = validateHexAddresses()
 
@@ -182,6 +186,7 @@ export default function Allowance() {
         setData(form  => ({...form, [inputsPropsMap[input.id]] : input.value}))
     }
 
+    // display the token pictogram when the user leaves the contract address field
     async function handleContractAddressBlur(e: FormEvent<HTMLInputElement>){
         const address = (e.target as HTMLInputElement).value as string;
         if(!AddressUtils.isValidAddress(address)) return setSymbol(null)
@@ -197,7 +202,7 @@ export default function Allowance() {
     }
 
     return(
-        <DashboardLayout modal={modal}>
+        <>
             <TokenPanel ownedTokens={ownedTokens} setSnackbarMessage={setSnackbarMessage}/>
             <div id="allowanceFormContainer" className='flex grow shrink flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] pt-[30px] border border-solid border-dashcomponent-border'>
                 <h1 className='mx-auto max-w-[580px] w-full text-[36px] leading-[34px] font-bold font-oswald' style={{color:'#474B55'}}>{!existingAllowance ? 'SET A NEW' : 'EDIT AN'} ALLOWANCE</h1>
@@ -256,9 +261,11 @@ export default function Allowance() {
                 </form>
             </div>
             <SpenderPanel setSnackbarMessage={setSnackbarMessage}/>
-        </DashboardLayout>
+        </>
     )
 }
+
+Allowance.layout = (page: React.ReactNode) => <DashboardLayout children={page}/>
 
 interface IPageProps extends PageProps {
     flash: {

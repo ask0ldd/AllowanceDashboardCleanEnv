@@ -2,9 +2,8 @@ import Table from '@/Components/Dashboard/Table/Table';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { IAllowance } from '@/types/IAllowance';
 import { usePage } from '@inertiajs/react';
-import type { PageProps } from "@inertiajs/core";
+import { type PageProps } from "@inertiajs/core";
 import { useEffect, useRef } from 'react';
-import useModalManager from '@/hooks/useModalManager';
 import BlankTable from '@/Components/Dashboard/Table/BlankTable';
 import { useSDK } from '@metamask/sdk-react';
 import checked from '@/assets/checked.png'
@@ -12,25 +11,26 @@ import searchIcon from '@/assets/icons/searchIcon.svg'
 import useSnackbar from '@/hooks/useSnackbar';
 import { useEtherClientsContext } from '@/hooks/useEtherClientsContext';
 import useDashboardControls from '@/hooks/useDashboardControls';
+import { useModalContext } from '@/context/ModalContext';
 
 export default function Dashboard() {
 
     const { flash, allowances} = usePage<IPageProps>().props
 
+    const { modal } = useModalContext()
     const { connected } = useSDK()
-
-    const modal = useModalManager({initialVisibility : false, initialModalContentId : "error"})
     const { setSnackbarMessage } = useSnackbar()
 
-    const { debouncedSearch, searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard } = useDashboardControls()
+    const { searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard } = useDashboardControls()
 
     useEffect(() => {
         if(flash?.success) setSnackbarMessage(flash.success)
     }, [flash.success])
 
+    // reset the table filters & the search bar when resetFilters == true is sent as a prop by the backend
     useEffect(() => {
         if(flash?.resetFilters){
-            // should use only one state for all three options
+            // perfs : should use only one state for all three options
             setSearchValue('')
             setShowRevoked(false)
             setShowUnlimitedOnly(false)
@@ -52,15 +52,12 @@ export default function Dashboard() {
     }
 
     // display only the allowances associated with the active wallet address
-    const { walletClient } = useEtherClientsContext()
-    useEffect(() => {
-        if(walletClient?.account?.address) updateDashboard({showRevoked, showUnlimitedOnly, searchValue})
-    }, [walletClient?.account?.address])
+    const { walletClient, addressRef } = useEtherClientsContext()
    
-    useEffect(() => {
+    /*useEffect(() => {
         debouncedSearch(searchValue);
         return () => debouncedSearch.cancel();
-    }, [searchValue, debouncedSearch]);
+    }, [searchValue, debouncedSearch]);*/
     
     function handleSearchInput(e: React.ChangeEvent<HTMLInputElement>) {
         const value = e.target.value
@@ -79,10 +76,12 @@ export default function Dashboard() {
     function handleClearFilter(event: React.MouseEvent<HTMLDivElement>): void {
         setShowRevoked(false)
         setShowUnlimitedOnly(false)
+        setSearchValue("")
+        updateDashboard({showRevoked : false, showUnlimitedOnly: false, searchValue : ""})
     }
 
     return(
-        <DashboardLayout modal={modal}>
+        <>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
                 <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>{showUnlimitedOnly ? 'UNLIMITED' : showRevoked ? 'REVOKED' : 'ACTIVE'} ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
@@ -120,14 +119,15 @@ export default function Dashboard() {
                     <Table 
                         allowances={allowances} 
                         setSnackbarMessage={setSnackbarMessage}
-                        modal={modal}
                     /> : 
                     <BlankTable/>
                 }
             </div>
-        </DashboardLayout>
+        </>
     )
 }
+
+Dashboard.layout = (page: React.ReactNode) => <DashboardLayout children={page}/>
 
 interface IPageProps extends PageProps {
     flash: {
