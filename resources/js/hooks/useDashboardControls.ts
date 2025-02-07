@@ -15,18 +15,20 @@ export default function useDashboardControls(){
         })
     }
     
-    const [showRevoked, setShowRevoked] = useState(false)
 
-    const [showUnlimitedOnly, setShowUnlimitedOnly] = useState(false)
+    const [filters, setFilters] = useState({
+        searchValue : "",
+        showUnlimitedOnly : false,
+        showRevoked : false
+    })
 
-    const [searchValue, setSearchValue] = useState("")
     const debouncedSearch = useMemo(
         () => debounce((value: string) => {
             router.get(route('dashboard'), 
                 {   
-                    showRevoked, 
+                    showRevoked : filters.showRevoked, 
                     searchValue: value, 
-                    showUnlimitedOnly,
+                    showUnlimitedOnly : filters.showUnlimitedOnly,
                 },
                 {
                     preserveState: true,
@@ -37,14 +39,16 @@ export default function useDashboardControls(){
                 }
             )
         }, 300),
-        [showRevoked, showUnlimitedOnly]
+        [filters.showRevoked, filters.showUnlimitedOnly]
     )
 
     useEffect(() => {
         console.log("debounce")
-        debouncedSearch(searchValue);
+        debouncedSearch(filters.searchValue);
         return () => debouncedSearch.cancel();
-    }, [searchValue/*, debouncedSearch*/]);
+    }, [filters.searchValue/*, debouncedSearch*/]);
 
-    return {debouncedSearch, searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard}
+    const resetValue = {showRevoked : false, showUnlimitedOnly: false, searchValue : ""}
+
+    return {debouncedSearch, updateDashboard, filters, setFilters, resetValue}
 }

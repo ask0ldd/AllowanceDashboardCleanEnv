@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: IProps) {
         return isHexAddress(storageAddress) ? storageAddress : null
     })*/)
 
-    // sending the walletAddress with each router calls & close the waiting confirmation modal when switching pages
+    // Include the wallet address in each router request and automatically close the waiting confirmation modal upon page transitions
     const removeRouterEventListener = useRef<VoidFunction | null>(null)
     useEffect(() => {
         const callback = (event: { detail: { visit: { headers: Record<string, string | null> } } }) => {

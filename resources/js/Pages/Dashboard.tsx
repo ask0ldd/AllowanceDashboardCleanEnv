@@ -21,7 +21,7 @@ export default function Dashboard() {
     const { connected } = useSDK()
     const { setSnackbarMessage } = useSnackbar()
 
-    const { searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard } = useDashboardControls()
+    const { updateDashboard, filters, setFilters, resetValue } = useDashboardControls()
 
     useEffect(() => {
         if(flash?.success) setSnackbarMessage(flash.success)
@@ -30,42 +30,32 @@ export default function Dashboard() {
     // reset the table filters & the search bar when resetFilters == true is sent as a prop by the backend
     useEffect(() => {
         if(flash?.resetFilters){
-            // perfs : should use only one state for all three options
-            setSearchValue('')
-            setShowRevoked(false)
-            setShowUnlimitedOnly(false)
+            setFilters({...resetValue})
         }
     }, [flash.resetFilters])
 
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
-        setShowUnlimitedOnly(false)
-        const newShowRevoked = !showRevoked
-        setShowRevoked(prevShowRevoked => !prevShowRevoked)
-        updateDashboard({ showRevoked: newShowRevoked, showUnlimitedOnly: false, searchValue })
+        const newShowRevoked = !filters.showRevoked
+        setFilters(prevFilters => ({searchValue : prevFilters.searchValue, showRevoked : newShowRevoked, showUnlimitedOnly : false}))
+        updateDashboard({ showRevoked: newShowRevoked, showUnlimitedOnly: false, searchValue : filters.searchValue })
     }
 
     function handleDisplayUnlimitedOnly(e : React.MouseEvent<HTMLDivElement>){
-        setShowRevoked(false)
-        const newUnlimited = !showUnlimitedOnly
-        setShowUnlimitedOnly(prev => !prev)
-        updateDashboard({ showRevoked: false, showUnlimitedOnly: newUnlimited, searchValue })
+        const newUnlimited = !filters.showUnlimitedOnly
+        setFilters(prevFilters => ({searchValue : prevFilters.searchValue, showRevoked : false, showUnlimitedOnly : newUnlimited}))
+        updateDashboard({ showRevoked: false, showUnlimitedOnly: newUnlimited, searchValue : filters.searchValue })
     }
 
     // display only the allowances associated with the active wallet address
     const { walletClient, addressRef } = useEtherClientsContext()
-   
-    /*useEffect(() => {
-        debouncedSearch(searchValue);
-        return () => debouncedSearch.cancel();
-    }, [searchValue, debouncedSearch]);*/
-    
+      
     function handleSearchInput(e: React.ChangeEvent<HTMLInputElement>) {
         const value = e.target.value
-        setSearchValue(value)
+        setFilters(prevFilters => ({...prevFilters, searchValue : value}))
     }
 
     function handleEmptySearchTermClick(){
-        setSearchValue("")
+        setFilters(prevFilters => ({...prevFilters, searchValue : ""}))
     }
     
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -74,20 +64,18 @@ export default function Dashboard() {
     }
 
     function handleClearFilter(event: React.MouseEvent<HTMLDivElement>): void {
-        setShowRevoked(false)
-        setShowUnlimitedOnly(false)
-        setSearchValue("")
-        updateDashboard({showRevoked : false, showUnlimitedOnly: false, searchValue : ""})
+        setFilters({...resetValue})
+        updateDashboard({...resetValue})
     }
 
     return(
         <>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
-                <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>{showUnlimitedOnly ? 'UNLIMITED' : showRevoked ? 'REVOKED' : 'ACTIVE'} ALLOWANCES</h1>
+                <h1 className='text-[36px] font-bold font-oswald text-offblack leading-[34px] translate-y-[-6px]'>{filters.showUnlimitedOnly ? 'UNLIMITED' : filters.showRevoked ? 'REVOKED' : 'ACTIVE'} ALLOWANCES</h1>
                 <div className='flex justify-between h-[44px] mt-[25px]'>
                     <div onClick={handleFocusInput} className='cursor-text flex pl-[16px] pr-[16px] w-[250px] h-[40px] mt-auto items-center justify-between rounded-full bg-[#FDFDFE] outline-1 outline outline-[#E1E3E6] focus:outline-1 focus:outline-[#F86F4D]'>
-                        <input spellCheck="false" ref={inputRef} disabled={!allowances || !connected} placeholder='Search' className='border-none outline-none bg-none h-[40px]' type="text" onInput={handleSearchInput} value={searchValue} />
-                        {searchValue == "" ? 
+                        <input spellCheck="false" ref={inputRef} disabled={!allowances || !connected} placeholder='Search' className='border-none outline-none bg-none h-[40px]' type="text" onInput={handleSearchInput} value={filters.searchValue} />
+                        {filters.searchValue == "" ? 
                             <img alt="search icon" onClick={handleFocusInput} className='cursor-text' src={searchIcon}/> : 
                             <svg onClick={handleEmptySearchTermClick} className='cursor-pointer translate-y-[1px]' width="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                                 <path fill="#303030" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
@@ -96,14 +84,14 @@ export default function Dashboard() {
                     <div className='flex  gap-x-[10px]'>
                         <div onClick={allowances && connected ? handleDisplayUnlimitedOnly : undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
                             <label id='unlimitedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Unlimited only</label>
-                            <div role="checkbox" aria-checked={showUnlimitedOnly} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showUnlimitedOnly ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
-                                {showUnlimitedOnly && <img alt="checkbox image" src={checked}/>}
+                            <div role="checkbox" aria-checked={filters.showUnlimitedOnly} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!filters.showUnlimitedOnly ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
+                                {filters.showUnlimitedOnly && <img alt="checkbox image" src={checked}/>}
                             </div>
                         </div>
                         <div onClick={allowances && connected ? handleDisplayRevoked :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
                             <label id='revokedLabel' className={'flex items-center text-[14px]' + (allowances && connected ? ' cursor-pointer' : '')}>Revoked only</label>
-                            <div role="checkbox" aria-checked={showRevoked} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!showRevoked ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
-                                {showRevoked && <img alt="checkbox image" src={checked}/>}
+                            <div role="checkbox" aria-checked={filters.showRevoked} className={'border-[1px] border-solid border-[#48494c] h-[14px] w-[14px] rounded-[3px] flex justify-center items-center' + (!filters.showRevoked ? ' bg-[#eef0f2]' : ' bg-[#48494c]') + (allowances && connected ? ' cursor-pointer' : '')}>
+                                {filters.showRevoked && <img alt="checkbox image" src={checked}/>}
                             </div>
                         </div>
                         <div onClick={allowances && connected ? handleClearFilter :undefined} className={'flex justify-center items-center gap-x-[10px] bg-[hsl(210,25%,100%)] px-[15px] rounded-[6px] shadow-[0_1px_2px_#A8B0BD10,0_3px_6px_#5D81B930]' + (allowances && connected ? ' cursor-pointer' : '')}>
