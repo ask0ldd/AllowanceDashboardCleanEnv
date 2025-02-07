@@ -10,13 +10,14 @@ import NumberUtils from '@/utils/NumberUtils'
 import DateUtils from '@/utils/DateUtils'
 import { useEtherClientsContext } from '@/hooks/useEtherClientsContext'
 import { EthereumClientNotFoundError } from '@/errors/EthereumClientNotFoundError'
-import IModalProps from '@/types/IModalProps'
 import IFormAllowance from '@/types/IFormAllowance'
+import { useModalContext } from '@/context/ModalContext'
 
-export default function Table({allowances, setSnackbarMessage, modal} : IProps){
+export default function Table({allowances, setSnackbarMessage} : IProps){
 
     const { erc20TokenService } = useServices()
 
+    const {modal} = useModalContext()
     const {handleSetAllowanceErrors} = useErrorHandler(modal.showError)
 
     const { publicClient, walletClient } = useEtherClientsContext()
@@ -51,15 +52,18 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
                 ownerAddress: walletAddress.toLowerCase(),
                 spenderAddress: spenderAddress.toLowerCase(),
                 spenderName : '',
-                amount : 0, // !!!
+                amount : 0,
                 isUnlimited : false,
                 transactionHash: hash,
-            }))
+                resetFilters : true
+            })) // !!! resetfilters
 
-            console.log(JSON.stringify(data))
+            // !!! console.log(JSON.stringify(data))
 
-            put('/allowance/queue/' + allowanceId /*route().params.id*/, {
+            put('/allowance/queue/' + allowanceId, {
+                // preserveState: true,
                 preserveScroll: true,
+                preserveUrl: true,
                 onSuccess: () => {
                     setSnackbarMessage(Date.now() + "::Transaction sent. Hash : " + hash)
                 },
@@ -143,7 +147,6 @@ export default function Table({allowances, setSnackbarMessage, modal} : IProps){
 interface IProps{
     allowances?: IAllowance[]
     setSnackbarMessage : (value: React.SetStateAction<string | null>) => void
-    modal : IModalProps
 }
 
 /*

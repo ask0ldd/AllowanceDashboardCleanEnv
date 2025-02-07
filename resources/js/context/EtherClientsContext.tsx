@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
 import { createPublicClient, http, PublicClient, WalletClient } from 'viem';
 import { holesky } from 'viem/chains';
 
@@ -8,6 +8,7 @@ interface EtherClientsContextType {
   setPublicClient: (client: PublicClient) => void
   setWalletClient: (client: WalletClient) => void
   flushWClient: () => void
+  addressRef : React.RefObject<`0x${string}` | null>
 }
 
 export const EtherClientsContext = createContext<EtherClientsContextType | undefined>(undefined)
@@ -15,6 +16,8 @@ export const EtherClientsContext = createContext<EtherClientsContextType | undef
 export const EtherClientsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [publicClient, setPublicClient] = useState<PublicClient | null>(getPublicClient ?? null)
     const [walletClient, setWalletClient] = useState<WalletClient | null>(null)
+    const addressRef = useRef(walletClient?.account?.address ?? null)
+    
 
     function flushWClient(){
         setWalletClient(null)
@@ -28,7 +31,7 @@ export const EtherClientsProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     return (
-        <EtherClientsContext.Provider value={{ publicClient, walletClient, setPublicClient, setWalletClient, flushWClient }}>
+        <EtherClientsContext.Provider value={{ publicClient, walletClient, setPublicClient, setWalletClient, flushWClient, addressRef }}>
         {children}
         </EtherClientsContext.Provider>
     )

@@ -37,13 +37,14 @@ export default function useDashboardControls(){
                 }
             )
         }, 300),
-        [showRevoked, router, showUnlimitedOnly]
+        [showRevoked, showUnlimitedOnly]
     )
 
     useEffect(() => {
+        console.log("debounce")
         debouncedSearch(searchValue);
         return () => debouncedSearch.cancel();
-    }, [searchValue, debouncedSearch]);
+    }, [searchValue/*, debouncedSearch*/]);
 
     return {debouncedSearch, searchValue, setSearchValue, showUnlimitedOnly, setShowUnlimitedOnly, showRevoked, setShowRevoked , updateDashboard}
 }
