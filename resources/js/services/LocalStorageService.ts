@@ -32,11 +32,19 @@ export default class LocalStorageService {
         }
     }
 
-    deleteWalletAddress() {
+    /**
+     * Removes the wallet address from local storage.
+     * @returns {void}
+     */
+    deleteWalletAddress(): void {
         localStorage.removeItem("walletAddress")
     }
 
-    fullFlush() {
+    /**
+     * Clears all data from local storage.
+     * @returns {void}
+     */
+    fullFlush(): void {
         localStorage.clear()
     }
 }

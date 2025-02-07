@@ -1,18 +1,22 @@
-import { THexAddress } from "@/types/THexAddress"
-import { createPublicClient, createWalletClient, custom, WalletClient } from "viem"
-import { privateKeyToAccount } from "viem/accounts"
-import { hardhat, holesky } from "viem/chains"
+import { createPublicClient, createWalletClient, custom, PublicClient, WalletClient } from "viem"
+import { holesky } from "viem/chains"
 
 export default class MetaMaskService{
 
-    async getWalletClient(){
+    /**
+     * Retrieves a wallet client using the connected Ethereum provider.
+     * @async
+     * @returns {Promise<WalletClient|undefined>} A Promise that resolves to a WalletClient instance or undefined if an error occurs.
+     * @throws {Error} If no wallet extension is active.
+     */
+    async getWalletClient(): Promise<WalletClient|undefined>{
         try{
             if(!window.ethereum) throw new Error("No wallet extension active.")
             const [account] = await window.ethereum.request({ 
                 method: 'eth_requestAccounts' 
             })
             return createWalletClient({
-                account, // : address,
+                account,
                 chain: holesky,
                 transport : custom(window.ethereum)
             })
@@ -21,7 +25,13 @@ export default class MetaMaskService{
         }
     }
 
-    async getPublicClient(){
+    /**
+     * Creates a public client using the connected Ethereum provider.
+     * @async
+     * @returns {Promise<PublicClient|undefined>} A Promise that resolves to a PublicClient instance or undefined if an error occurs.
+     * @throws {Error} If no wallet extension is active.
+     */
+    async getPublicClient(): Promise<PublicClient|undefined>{
         try{
             if(!window.ethereum) throw new Error("No wallet extension active.")
             return createPublicClient({
@@ -32,72 +42,6 @@ export default class MetaMaskService{
             console.error(e)
         }
     }
-
-    /*walletClient : WalletClient | undefined = undefined
-
-    async connectToWallet(){
-        if (typeof window.ethereum !== 'undefined') {
-            this.walletClient = createWalletClient({
-                chain: hardhat,
-                transport: custom(window.ethereum)
-            })
-
-        } else {
-            console.error('MetaMask is inactive')
-            throw new Error('MetaMask is inactive.')
-        }      
-    }
-
-    isConnected(){
-        return !!this.walletClient
-    }
-
-    async getWalletAddress(){
-        try{
-            if(!this.walletClient) {
-                await this.connectToWallet()
-                if(!this.walletClient) throw new Error("Can't connect to your wallet.")
-            }
-            const response = await this.walletClient.requestAddresses()
-            // console.log('Connected address:', response[0])
-            return response[0]
-        }catch(error){
-            console.error('Failed to connect:', error)
-            throw error
-        }
-    }
-
-    async getAccount(){
-        try{
-            if(!this.walletClient) {
-                await this.connectToWallet()
-                if(!this.walletClient) throw new Error("Can't connect to your wallet.")
-            }
-            return this.walletClient.account
-        }catch(error){
-            console.error('Failed to connect:', error)
-            throw error
-        }
-    }*/
-
-    /*async getWalletAddress(){
-        if (typeof window.ethereum !== 'undefined') {
-            const client = createWalletClient({
-                chain: hardhat,
-                transport: custom(window.ethereum) // see below
-            })
-
-            try {
-                const response = await client.requestAddresses()
-                console.log('Connected address:', response[0])
-                return response[0]
-            } catch (error) {
-                console.error('Failed to connect:', error)
-            }
-        } else {
-          console.error('MetaMask is not installed')
-        }
-    }*/
     
     /*
         NB : fix window.ethereum alert

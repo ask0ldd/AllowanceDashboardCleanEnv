@@ -24,6 +24,15 @@ export default class ERC20TokenService{
 
     private deployedTokens = hhTokens
 
+    /**
+     * Retrieves the name of a token from its contract.
+     * @async
+     * @param {PublicClient} publicClient - The public client used to interact with the blockchain.
+     * @param {THexAddress} tokenAddress - The address of the token contract.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidAddressError} If the token address is invalid.
+     * @throws {Error} If there's an error retrieving the token name.
+     */
     async getTokenName(publicClient : PublicClient, tokenAddress : THexAddress){
         try{
             if(!publicClient) throw new PublicClientUnavailableError()
@@ -47,6 +56,16 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Retrieves both the name and symbol of a token from its contract.
+     * @async
+     * @param {PublicClient} publicClient - The public client used to interact with the blockchain.
+     * @param {THexAddress} tokenAddress - The address of the token contract.
+     * @returns {Promise<{name: string, symbol: string}>} An object containing the token's name and symbol.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidAddressError} If the token address is invalid.
+     * @throws {Error} If there's an error retrieving the token information or if the retrieved information is invalid.
+     */
     async getTokenNSymbol(publicClient : PublicClient, tokenAddress: THexAddress): Promise<{ name: string, symbol: string }> {
         try {
             if(!publicClient) throw new PublicClientUnavailableError()
@@ -79,6 +98,16 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Retrieves the total supply of a token from its contract.
+     * @async
+     * @param {PublicClient} publicClient - The public client used to interact with the blockchain.
+     * @param {`0x${string}`} contractAddress - The address of the token contract.
+     * @returns {Promise<string>} The total supply of the token.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidAddressError} If the contract address is invalid.
+     * @throws {Error} If there's an error retrieving the total supply.
+     */
     async getTotalSupply(publicClient : PublicClient, contractAddress : `0x${string}`) : Promise<string>{
         try{
             if(!publicClient) throw new PublicClientUnavailableError()
@@ -97,6 +126,16 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Revokes the allowance for a specific spender on a given token contract.
+     * @async
+     * @param {Object} params - The parameters for revoking allowance.
+     * @param {WalletClient} params.walletClient - The wallet client used to sign and send the transaction.
+     * @param {THexAddress} params.contractAddress - The address of the token contract.
+     * @param {THexAddress} params.spenderAddress - The address of the spender whose allowance is being revoked.
+     * @returns {Promise<`0x${string}`>} The transaction hash of the revoke operation.
+     * @throws {Error} If there's an error during the revocation process.
+     */
     async revokeAllowance({walletClient, contractAddress, spenderAddress} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}`> {
         return await this.setAllowance({
             walletClient,
@@ -106,6 +145,18 @@ export default class ERC20TokenService{
         })
     }
 
+    /**
+     * Reads the allowance for a given token, owner, and spender.
+     * @async
+     * @param {Object} params - The parameters for reading the allowance.
+     * @param {PublicClient} params.publicClient - The public client instance.
+     * @param {THexAddress} params.contractAddress - The token contract address.
+     * @param {THexAddress} params.ownerAddress - The address of the token owner.
+     * @param {THexAddress} params.spenderAddress - The address of the spender.
+     * @returns {Promise<ReadContractReturnType>} The allowance amount.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidAddressError} If any of the provided addresses are invalid.
+     */
     async readAllowance({publicClient, contractAddress, ownerAddress, spenderAddress} : {publicClient : PublicClient, contractAddress : THexAddress, ownerAddress : THexAddress, spenderAddress : THexAddress}) : Promise<ReadContractReturnType>{
         try {
             if(!publicClient) throw new PublicClientUnavailableError()
@@ -125,6 +176,19 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Sets an allowance for a given token and spender.
+     * @async
+     * @param {Object} params - The parameters for setting the allowance.
+     * @param {WalletClient} params.walletClient - The wallet client instance.
+     * @param {THexAddress} params.contractAddress - The token contract address.
+     * @param {THexAddress} params.spenderAddress - The address of the spender.
+     * @param {bigint} params.amount - The amount to set as allowance.
+     * @returns {Promise<`0x${string}`>} The transaction hash.
+     * @throws {Error} If the amount is not a BigInt.
+     * @throws {InvalidAddressError} If any of the provided addresses are invalid.
+     * @throws {WalletAccountNotFoundError} If the wallet account is not found.
+     */
     async setAllowance({walletClient, contractAddress, spenderAddress, amount} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress, amount : bigint}) : Promise<`0x${string}`>{
         try{
             if (typeof amount !== 'bigint') {
@@ -153,6 +217,15 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Retrieves the transaction receipt for a given transaction hash.
+     * @async
+     * @param {PublicClient} publicClient - The public client instance.
+     * @param {`0x${string}`} hash - The transaction hash.
+     * @returns {Promise<TransactionReceipt>} The transaction receipt.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidHashError} If the provided hash is invalid.
+     */
     async getReceipt(publicClient : PublicClient, hash : `0x${string}`) : Promise<TransactionReceipt> {
         try{
             if(!publicClient) throw new PublicClientUnavailableError()
@@ -164,10 +237,29 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Sets the allowance to the maximum possible value (unlimited).
+     * @async
+     * @param {Object} params - The parameters for setting unlimited allowance.
+     * @param {WalletClient} params.walletClient - The wallet client instance.
+     * @param {THexAddress} params.contractAddress - The token contract address.
+     * @param {THexAddress} params.spenderAddress - The address of the spender.
+     * @returns {Promise<`0x${string}`>} The transaction hash.
+     */
     async setAllowanceToUnlimited({walletClient, contractAddress, spenderAddress} : {walletClient : WalletClient, contractAddress : THexAddress, spenderAddress : THexAddress}) : Promise<`0x${string}`>{
         return this.setAllowance({walletClient, contractAddress, spenderAddress, amount : this.maxUint256})
     }
 
+    /**
+     * Gets the token balance for a given address.
+     * @async
+     * @param {PublicClient} publicClient - The public client instance.
+     * @param {THexAddress} tokenAddress - The token contract address.
+     * @param {THexAddress} walletAddress - The address to check the balance for.
+     * @returns {Promise<bigint>} The token balance.
+     * @throws {PublicClientUnavailableError} If the public client is not available.
+     * @throws {InvalidAddressError} If any of the provided addresses are invalid.
+     */
     async getBalance(publicClient : PublicClient, tokenAddress : THexAddress, walletAddress : THexAddress) : Promise<bigint>{
         try{
             /*
@@ -193,6 +285,16 @@ export default class ERC20TokenService{
         }
     }
 
+    /**
+     * Retrieves the balances of multiple tokens for a given wallet address.
+     * 
+     * @async
+     * @param {PublicClient} publicClient - The public client used for blockchain interactions.
+     * @param {THexAddress[]} tokenAddresses - An array of token addresses to check balances for.
+     * @param {THexAddress} walletAddress - The wallet address to check balances for.
+     * @returns {Promise<Record<THexAddress, bigint>>} A promise that resolves to an object mapping token addresses to their respective balances.
+     * @throws {Error} If there are errors fetching balances for specific tokens (errors are logged to console).
+     */
     async getAllBalances(publicClient : PublicClient, tokenAddresses : THexAddress[], walletAddress : THexAddress): Promise<Record<THexAddress, bigint>> {
         const balances: Record<THexAddress, bigint> = {}      
         const errors: Error[] = [];
@@ -217,13 +319,26 @@ export default class ERC20TokenService{
         return balances
     }
 
-    getSymbols(){
+    /**
+     * Retrieves the symbols of all deployed tokens.
+     * 
+     * @returns {string[]} An array of token symbols.
+     */
+    getSymbols(): string[]{
         return this.deployedTokens.map(token => token.symbol)
     }
 
+    /**
+     * Checks if a given address is a contract address.
+     * 
+     * @async
+     * @param {PublicClient} publicClient - The public client used for blockchain interactions.
+     * @param {THexAddress} address - The address to check.
+     * @returns {Promise<boolean>} A promise that resolves to true if the address is a contract, false otherwise.
+     * @throws {Error} If there's an error checking the address (error is logged to console).
+     */
     async isContract(publicClient : PublicClient, address: THexAddress): Promise<boolean> {
         if(!isHexAddress(address)) return false
-        console.log("is contract")
         try {
             const bytecode = await publicClient.getCode({
               address
