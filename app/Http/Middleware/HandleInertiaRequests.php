@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Log;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,12 +36,14 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        Log::info('middleware : ' . $request->session()->get('resetFilters'));
         return array_merge(parent::share($request), [
             'flash' => [
                 'message' => fn() => $request->session()->get('message'),
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
                 'resetFilters' => fn() => $request->session()->get('resetFilters'),
+                'fullReset' => fn() => $request->session()->get('fullReset'),
             ],
             'success' => fn() => $request->session()->get('success'),
             'walletAddress' => $request->header('walletAddress'),

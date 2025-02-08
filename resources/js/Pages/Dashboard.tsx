@@ -29,10 +29,10 @@ export default function Dashboard() {
 
     // reset the table filters & the search bar when resetFilters == true is sent as a prop by the backend
     useEffect(() => {
-        if(flash?.resetFilters){
+        if(flash?.resetFilters || flash?.fullReset){
             setFilters({...resetValue})
         }
-    }, [flash.resetFilters])
+    }, [flash.resetFilters, flash.fullReset])
 
     function handleDisplayRevoked(e : React.MouseEvent<HTMLDivElement>){
         const newShowRevoked = !filters.showRevoked
@@ -123,6 +123,7 @@ interface IPageProps extends PageProps {
       message? : string
       error? : string
       resetFilters? : boolean
+      fullReset? : boolean
     };
 
     success?: string

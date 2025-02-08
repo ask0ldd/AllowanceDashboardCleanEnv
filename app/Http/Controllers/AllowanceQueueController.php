@@ -13,6 +13,7 @@ use App\Services\PendingAllowanceService;
 use App\Services\TransactionHashService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Redirect;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -77,23 +78,21 @@ class AllowanceQueueController extends Controller
 
             dispatch(new CheckHoleskyTransactionJob($pendingAllowance));
 
-            session()->flash('success', now()->format('H:i:s') . '::Allowance queued successfully.');
+            /*session()->flash('success', now()->format('H:i:s') . '::Allowance queued successfully.');
+            Log::info('Before flash: ' . json_encode(session()->all()));
             session()->flash('resetFilters', true);
+            Log::info('After flash: ' . json_encode(session()->all()));*/
+            // return to_route('dashboard');
 
-            return to_route('dashboard');
+            return Redirect::to(route('dashboard'))
+                ->with('success', now()->format('H:i:s') . '::Allowance queued successfully.')
+                ->with('resetFilters', true)->with('fullReset', true);
         } catch (\Exception $e) {
             Log::error('Error creating allowance: ' . $e->getMessage());
             session()->flash('error', now()->format('H:i:s') . '::Error queuing allowance.');
             return back()->withErrors(['error' => 'An error occurred while creating the allowance: ' . $e->getMessage(),])->withInput();
         }
     }
-    //->with(['success' => now()->format('H:i:s') . '::Allowance queued successfully.', 'resetFilters' => true]);
-    /*$allowances = $this->allowanceService->getFistTenActiveAllowancesFor('allowances : ' . $validated['ownerAddress']);
-            Log::info($allowances);
-            return Inertia::render('Dashboard', [
-                'allowances' => AllowanceResource::collection($allowances),
-            ]);*/
-
 
     private function transactionHashExists(string $transactionHash): bool
     {
