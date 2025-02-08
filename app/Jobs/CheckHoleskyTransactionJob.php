@@ -46,6 +46,7 @@ class CheckHoleskyTransactionJob implements ShouldQueue
             // throw new ManualJobFailedException("Manual Fail for testing purposes.");
 
             $successNeedle = "title='A Status code indicating if the top-level call succeeded or failed (applicable for Post BYZANTIUM blocks only)'><i class='fa fa-check-circle me-1'></i>Success</span>";
+            // !!! if last try should use second needle
             $secondNeedle = "<i class='fa fa-dot-circle text-secondary me-1'></i>Indexing</span><span class='small text-muted'><i>&nbsp; This transaction has been included and will be reflected in a short while.</i>";
 
             $response = $scrapingService->scrapeEtherscan($this->transactionHash);

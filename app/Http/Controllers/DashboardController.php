@@ -7,6 +7,9 @@ use App\Http\Resources\AllowanceResource;
 use App\Services\AllowanceService;
 use Illuminate\Http\Request;
 
+/**
+ * Controller for handling dashboard-related operations.
+ */
 class DashboardController extends Controller
 {
     protected $allowanceService;
@@ -16,6 +19,12 @@ class DashboardController extends Controller
         $this->allowanceService = $allowanceService;
     }
 
+    /**
+     * Display the dashboard with filtered allowances.
+     *
+     * @param Request $request The incoming HTTP request
+     * @return \Inertia\Response
+     */
     public function showDashboard(Request $request): \Inertia\Response
     {
         if (!$request->header('walletAddress')) return Inertia::render('Dashboard');
