@@ -57,15 +57,15 @@ export default function Dashboard() {
     function handleEmptySearchTermClick(){
         setFilters(prevFilters => ({...prevFilters, searchValue : ""}))
     }
-    
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    function handleFocusInput(){
-        if(inputRef) inputRef.current?.focus()
-    }
 
     function handleClearFilter(event: React.MouseEvent<HTMLDivElement>): void {
         setFilters({...resetValue})
         updateDashboard({...resetValue})
+    }
+        
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    function handleFocusInput(){
+        if(inputRef) inputRef.current?.focus()
     }
 
     return(

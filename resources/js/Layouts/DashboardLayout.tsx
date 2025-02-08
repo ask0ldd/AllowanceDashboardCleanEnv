@@ -126,15 +126,15 @@ export default function DashboardLayout({ children }: IProps) {
     useEffect(() => {
         handleAccountsChangedCallback.current = async (accounts: string[]) => {
             if(accounts.length && isHexAddress(accounts[0])) {
-                console.log("handleAccountsChangedCallback inside")
+                // console.log("handleAccountsChangedCallback inside")
                 const _walletClient = await metamaskService.getWalletClient()
-                console.log(JSON.stringify(_walletClient))
+                // console.log(JSON.stringify(_walletClient))
                 if(_walletClient) {
                     addressRef.current = accounts[0] ?? null
                     setWalletClient(_walletClient)
                 }
                 if(isHexAddress(_walletClient?.account?.address)) {
-                    console.log(_walletClient?.account?.address)
+                    // console.log(_walletClient?.account?.address)
                     setWalletAddress(_walletClient?.account?.address)
                     localStorageService.storeWalletAddress(_walletClient?.account?.address)
                     router.reload()

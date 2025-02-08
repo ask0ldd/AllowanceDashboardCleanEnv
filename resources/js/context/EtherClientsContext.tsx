@@ -16,7 +16,7 @@ export const EtherClientsContext = createContext<EtherClientsContextType | undef
 export const EtherClientsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [publicClient, setPublicClient] = useState<PublicClient | null>(getPublicClient ?? null)
     const [walletClient, setWalletClient] = useState<WalletClient | null>(null)
-    const addressRef = useRef(walletClient?.account?.address ?? null)
+    const addressRef = useRef<`0x${string}` | null>(walletClient?.account?.address ?? null)
     
 
     function flushWClient(){
