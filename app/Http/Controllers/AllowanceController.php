@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
+/**
+ * Controller for managing allowances.
+ */
 class AllowanceController extends Controller
 {
     protected $allowanceService;
@@ -27,12 +30,26 @@ class AllowanceController extends Controller
         $this->transactionHashService = $transactionHashService;
     }
 
+    /**
+     * Display the form for creating a new allowance.
+     *
+     * @return \Inertia\Response The Inertia response containing the Allowance component with token list.
+     */
     public function showNewForm(): \Inertia\Response
     {
         $tokenList = $this->tokenService->getAll();
         return Inertia::render('Allowance', ['ownedTokens' => $tokenList]);
     }
 
+    /**
+     * Display the form for editing an existing allowance.
+     *
+     * @param Request $request The incoming HTTP request containing the allowance ID.
+     * @return \Inertia\Response The Inertia response containing the Allowance component with existing allowance data and token list.
+     *
+     * @throws ModelNotFoundException If the requested allowance is not found.
+     * @throws \Exception For any other unexpected errors during processing.
+     */
     public function showEditForm(Request $request): \Inertia\Response
     {
         try {

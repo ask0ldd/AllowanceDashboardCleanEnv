@@ -79,19 +79,21 @@ class AllowanceQueueController extends Controller
 
             session()->flash('success', now()->format('H:i:s') . '::Allowance queued successfully.');
             session()->flash('resetFilters', true);
-            // !!! render instead : leads to empty dashboard
-            return to_route('dashboard'); //->with(['success' => now()->format('H:i:s') . '::Allowance queued successfully.', 'resetFilters' => true]);
-            /*$allowances = $this->allowanceService->getFistTenActiveAllowancesFor('allowances : ' . $validated['ownerAddress']);
-            Log::info($allowances);
-            return Inertia::render('Dashboard', [
-                'allowances' => AllowanceResource::collection($allowances),
-            ]);*/
+
+            return to_route('dashboard');
         } catch (\Exception $e) {
             Log::error('Error creating allowance: ' . $e->getMessage());
             session()->flash('error', now()->format('H:i:s') . '::Error queuing allowance.');
             return back()->withErrors(['error' => 'An error occurred while creating the allowance: ' . $e->getMessage(),])->withInput();
         }
     }
+    //->with(['success' => now()->format('H:i:s') . '::Allowance queued successfully.', 'resetFilters' => true]);
+    /*$allowances = $this->allowanceService->getFistTenActiveAllowancesFor('allowances : ' . $validated['ownerAddress']);
+            Log::info($allowances);
+            return Inertia::render('Dashboard', [
+                'allowances' => AllowanceResource::collection($allowances),
+            ]);*/
+
 
     private function transactionHashExists(string $transactionHash): bool
     {
