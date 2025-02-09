@@ -1,6 +1,10 @@
 import { AccountNotFoundError } from "@/errors/AccountNotFoundError"
 import { ContractFunctionExecutionError, InvalidAddressError, BaseError, EstimateGasExecutionError, HttpRequestError, TimeoutError, UserRejectedRequestError, TransactionExecutionError } from "viem"
 
+
+/*
+* Give access to error handling functions
+ */
 export default function useErrorHandler(showErrorModal : (errorMessage: string) => void){
     
     function handleBalanceValidationErrors(e: unknown) {

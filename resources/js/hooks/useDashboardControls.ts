@@ -2,6 +2,9 @@ import { router } from "@inertiajs/react"
 import { debounce } from "lodash"
 import { useState, useMemo, useEffect } from "react"
 
+/*
+* centralizes and handles all filtering and search logic for the dashboard.
+*/
 export default function useDashboardControls(){
     const updateDashboard = (params : {showRevoked : boolean, searchValue : string, showUnlimitedOnly : boolean,}) => {
         router.get(route('dashboard'), {

@@ -2,6 +2,9 @@ import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import { useEffect } from "react";
 
+/*
+* Establish WebSocket connection for real-time transaction updates
+*/
 export default function useEcho(){
     useEffect(() => {
         if(!window.Pusher) window.Pusher = Pusher
