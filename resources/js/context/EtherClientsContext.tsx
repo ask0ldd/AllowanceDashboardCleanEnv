@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, ReactNode, useRef } from 'r
 import { createPublicClient, http, PublicClient, WalletClient } from 'viem';
 import { holesky } from 'viem/chains';
 
+/*
+* Stores the public and the wallet clients
+*/
 interface EtherClientsContextType {
   publicClient: PublicClient | null
   walletClient: WalletClient | null

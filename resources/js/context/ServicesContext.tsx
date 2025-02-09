@@ -3,6 +3,10 @@ import LocalStorageService from "@/services/LocalStorageService"
 import MetaMaskService from "@/services/MetaMaskService"
 import { createContext, ReactNode } from "react"
 
+/*
+* Contains all the instanciated services used through the app
+* Insertion : app.tsx
+*/
 export interface ServicesContextType {
     metamaskService: MetaMaskService
     erc20TokenService: ERC20TokenService
@@ -34,5 +38,3 @@ export function ServicesProvider({ children, customServices }: ServicesProviderP
         </ServicesContext.Provider>
     )
 }
-
-// wrapping happens into app.tsx
