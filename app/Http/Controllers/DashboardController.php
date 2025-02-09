@@ -36,6 +36,7 @@ class DashboardController extends Controller
         $walletAddress = strtolower($request->header('walletAddress'));
 
         $allowances = null;
+        // !!! should add sorting to the table
         if ($showRevoked) {
             $allowances = $this->allowanceService->getFirstTenRevokedAllowancesWith($walletAddress, $searchValue);
         } elseif ($showUnlimitedOnly) {

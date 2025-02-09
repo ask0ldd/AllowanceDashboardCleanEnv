@@ -68,6 +68,7 @@ export default function Dashboard() {
         if(inputRef) inputRef.current?.focus()
     }
 
+    // !!! should add sorting to the table
     return(
         <>
             <div id="allowanceListContainer" className='w-full flex flex-col bg-component-white rounded-3xl overflow-hidden p-[40px] border border-solid border-dashcomponent-border'>
