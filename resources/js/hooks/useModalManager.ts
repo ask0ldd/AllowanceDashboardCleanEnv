@@ -1,6 +1,10 @@
 import React from "react"
 import { useState, useEffect, useRef, ReactNode } from "react"
 
+/* 
+* Centralizes the core logic for modal functionality.
+* Check DashboardLayout.tsx to know more about the component insertion
+*/
 function useModalManager({initialVisibility, initialModalContentId} : IModalObject) {
 
     const [modalVisibility, setModalVisibility] = useState<boolean>(initialVisibility)

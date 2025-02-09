@@ -1,5 +1,9 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 
+/* 
+* Centralizes the core logic for snackbar functionality.
+* Check DashboardLayout.tsx to know more about the component insertion
+*/
 interface SnackbarContextType {
   snackbarMessage: string | null
   setSnackbarMessage: React.Dispatch<React.SetStateAction<string | null>>
