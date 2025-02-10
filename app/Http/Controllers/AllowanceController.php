@@ -37,7 +37,7 @@ class AllowanceController extends Controller
      */
     public function showNewForm(): \Inertia\Response
     {
-        $tokenList = $this->tokenService->getAll();
+        $tokenList = $this->tokenService->getTen();
         return Inertia::render('Allowance', ['ownedTokens' => $tokenList]);
     }
 
@@ -54,7 +54,7 @@ class AllowanceController extends Controller
     {
         try {
             // $tokenList = $request->header('walletAddress') ? $this->tokenService->getAll() : new TokenContractResource([]);
-            $tokenList = $this->tokenService->getAll();
+            $tokenList = $this->tokenService->getTen();
             $allowance = Allowance::findOrFail($request->id);
             AllowanceResource::withoutWrapping();
             return Inertia::render('Allowance', [

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TokenContract;
 use App\Http\Resources\TokenContractResource;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Service class for handling token-related operations.
@@ -18,10 +19,11 @@ class TokenService
      *
      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function getAll(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection // \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getTen(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection // \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $tokens = TokenContract::with('address')->take(10)->get();
         TokenContractResource::withoutWrapping(); // destructuring the resource so no such end format : { data : contract array }
+        Log::info(json_encode(TokenContractResource::collection($tokens)));
         return TokenContractResource::collection($tokens);
     }
 }

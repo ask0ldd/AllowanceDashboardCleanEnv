@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Address extends Model
 {
-    use HasFactory;
+    // use HasFactory;
 
     /**
      * The table associated with the model.
@@ -35,4 +35,3 @@ class Address extends Model
         'updated_at' => 'datetime',
     ];
 }
-?>
